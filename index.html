@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#176b5b">
+<title>حساب‌یار</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7f6;color:#18221f;font-family:Tahoma,Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.top{height:64px;background:#fff;border-bottom:1px solid #e4ebe8;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:5}
+.logo{display:flex;align-items:center;gap:9px;font-size:20px;font-weight:bold;color:#176b5b}.logoBox{width:36px;height:36px;border-radius:11px;background:#176b5b;color:#fff;display:grid;place-items:center}
+.wrap{display:flex;max-width:1200px;margin:auto;min-height:calc(100vh - 64px)}
+.side{width:210px;background:#fff;border-left:1px solid #e4ebe8;padding:14px}
+.side button{display:block;width:100%;text-align:right;background:transparent;border:0;border-radius:11px;padding:12px;margin-bottom:4px;color:#5e6966}
+.side button.active,.side button:hover{background:#e8f3f0;color:#176b5b;font-weight:bold}
+main{flex:1;padding:22px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.head h1{margin:0;font-size:23px}.muted{color:#78837f;font-size:12px;margin-top:6px}
+.primary,.secondary{border:0;border-radius:11px;padding:11px 15px;font-weight:bold}.primary{background:#176b5b;color:#fff}.secondary{background:#e9f2ef;color:#176b5b}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid #e4ebe8;border-radius:16px;padding:16px}.label{font-size:12px;color:#78837f}.num{font-size:19px;font-weight:bold;margin-top:8px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}
+.table{overflow:auto;background:#fff;border:1px solid #e4ebe8;border-radius:15px}
+table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #edf1ef;text-align:right;font-size:12px;white-space:nowrap}th{color:#74807c;background:#fafcfc}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#e8f3f0;color:#176b5b}.warn{background:#fff1d8;color:#a76a00}
+.search{margin-bottom:10px}.input{width:100%;padding:10px 11px;border:1px solid #d8e2de;border-radius:10px;background:#fff;outline:none}.input:focus{border-color:#176b5b}
+.modal{position:fixed;inset:0;background:#10231e99;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.open{display:flex}.box{background:#fff;width:min(700px,100%);max-height:92vh;overflow:auto;border-radius:19px;padding:19px}.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.close{border:0;background:#eef2f0;border-radius:9px;width:34px;height:34px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field label{display:block;font-size:11px;color:#697570;margin-bottom:5px}.full{grid-column:1/-1}
+.items{margin-top:12px}.item{display:grid;grid-template-columns:1.4fr .6fr .8fr .8fr 34px;gap:6px;margin-bottom:7px}.totals{background:#f5f9f7;padding:12px;border-radius:12px;margin-top:12px}.tr{display:flex;justify-content:space-between;align-items:center;margin:7px 0}.final{font-size:17px;font-weight:bold;color:#176b5b;border-top:1px solid #dfe9e5;padding-top:9px}
+.mobile{display:none}
+@media(max-width:800px){
+.side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}.item{grid-template-columns:1.2fr .55fr .75fr .75fr 32px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+.authMode #main{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
+.authLogo{width:64px;height:64px;border-radius:18px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:auto}
+.authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}.linkBtn{width:100%;border:0;background:transparent;padding:14px;color:#176b5b;cursor:pointer;font-family:inherit}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#176b5b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="حساب‌یار">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+<header class="top">
+<div class="logo"><span class="logoBox">ح</span> حساب‌یار</div>
+<div class="muted">مدیریت فروش و حساب مشتریان <span id="dbStatus">• اتصال…</span></div>
+</header>
+
+<div class="wrap">
+<aside class="side">
+<button data-page="home" class="active">🏠 داشبورد</button>
+<button data-page="sales">🧾 فاکتورها</button>
+<button data-page="customers">👥 مشتریان</button>
+<button data-page="products">📦 محصولات</button>
+<button data-page="finance">💰 مالی</button>
+<button data-page="reports">📊 گزارش‌ها</button>
+</aside>
+<main id="main"></main>
+</div>
+
+<nav class="mobile">
+<button data-page="home" class="active">🏠<br>خانه</button>
+<button data-page="sales">🧾<br>فاکتور</button>
+<button onclick="newInvoice()" style="font-size:22px;color:#176b5b">＋</button>
+<button data-page="customers">👥<br>مشتری</button>
+<button data-page="products">📦<br>کالا</button>
+</nav>
+
+<div id="modal" class="modal"><div id="box" class="box"></div></div>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL="https://fxlscrfnfqepchonanra.supabase.co";
+const SUPABASE_KEY="sb_publishable_m4oeS3DxKFwW3MD7jEfN8w_daMzX00F";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
+
+const money=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
+const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const nav=p=>document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.getAttribute("data-page")===p));
+const metric=(a,b,c)=>`<div class="card"><div class="label">${a}</div><div class="num">${b}</div><div class="muted">${c}</div></div>`;
+
+
+function authScreen(msg=""){
+ document.body.classList.add("authMode");
+ main.innerHTML=`<div class="authCard"><div class="authLogo">ح</div><h1>حساب‌یار</h1>
+ <p class="muted">ورود فقط با رمز عبور</p>
+ ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
+ <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
+ <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
+ <button class="primary fullBtn" onclick="doLogin()">ورود</button>
+ </div>`;
+}
+window.authScreen=authScreen;
+
+window.doLogin=async function(){
+ const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
+ const password=document.getElementById("authPass")?.value||"";
+ if(!email||!password)return authScreen("ایمیل و رمز عبور را وارد کنید.");
+ try{
+   const r=await sb.auth.signInWithPassword({email,password});
+   if(r.error)return authScreen("ورود ناموفق بود: "+r.error.message);
+   currentUser=r.data.user;
+   document.body.classList.remove("authMode");
+   try{await loadData();render("home");}
+   catch(e){authScreen("ورود انجام شد، اما بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
+ }catch(e){
+   authScreen("ارتباط با سرور انجام نشد. اینترنت را بررسی کنید و دوباره تلاش کنید.");
+ }
+};
+window.logout=async function(){await sb.auth.signOut();currentUser=null;authScreen("از حساب خارج شدید.");};
+
+async function loadData(){
+ const [c,p,i,e]=await Promise.all([
+  sb.from("customers").select("*").order("id"),
+  sb.from("products").select("*").order("id"),
+  sb.from("invoices").select("*").order("invoice_no",{ascending:false}),
+  sb.from("expenses").select("*").order("created_at",{ascending:false})
+ ]);
+ for(const r of [c,p,i,e])if(r.error)throw r.error;
+ data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
+ data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
+ data.invoices=(i.data||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+}
+sb.auth.onAuthStateChange((event, session)=>{
+ currentUser=session?.user||null;
+ if(event==="SIGNED_OUT" && !currentUser) authScreen();
+});
+async function start(){
+ try{
+   const s=await sb.auth.getSession();
+   currentUser=s.data.session?.user||null;
+   if(!currentUser){
+     authScreen();
+     return;
+   }
+   document.body.classList.remove("authMode");
+   if(window.history.replaceState){
+     window.history.replaceState({},document.title,window.location.pathname);
+   }
+   await loadData();
+   render("home");
+ }catch(e){
+   authScreen("ورود انجام شد، اما بارگذاری اطلاعات با خطا مواجه شد: "+(e.message||e));
+ }
+}
+document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>render(b.getAttribute("data-page")));
+function render(p){if(!currentUser)return authScreen();nav(p);({home,sales,customers,products,finance,reports}[p]||home)()}
+
+function home(){
+ const debt=data.customers.reduce((a,c)=>a+c.debt,0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
+ main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button> <button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div></div>
+ <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
+ <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
+ <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
+}
+function invoiceTable(a){if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th></tr></thead><tbody>${a.map(i=>`<tr onclick="showInvoice(${i.id})" style="cursor:pointer"><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td></tr>`).join("")}</tbody></table></div>`}
+function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
+function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
+function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td></tr>`).join("")}
+function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1><button class="primary" onclick="newProduct()">+ محصول جدید</button></div><input id="pq" class="input" placeholder="جستجو..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
+function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td><td>${p.stock} ${esc(p.unit)}</td><td>${p.stock<=p.min?'<span class="badge warn">موجودی کم</span>':'<span class="badge">موجود</span>'}</td></tr>`).join("")}
+function finance(){let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div>`}
+function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
+
+function openModal(h){document.getElementById("box").innerHTML=h;document.getElementById("modal").classList.add("open")}
+function closeModal(){document.getElementById("modal").classList.remove("open")}
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+
+window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
+window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
+
+window.newProduct=()=>openModal(`<div class="modalHead"><h2>محصول جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="pn" class="input"></div><div class="field"><label>واحد</label><input id="pu" class="input" value="عدد"></div><div class="field"><label>قیمت خرید</label><input id="pb" class="input" type="number" value="0"></div><div class="field"><label>قیمت فروش</label><input id="ps" class="input" type="number" value="0"></div><div class="field"><label>موجودی</label><input id="pst" class="input" type="number" value="0"></div><div class="field"><label>حداقل موجودی</label><input id="pmin" class="input" type="number" value="0"></div></div><br><button class="primary" onclick="saveProduct()">ثبت</button>`);
+window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("نام محصول را وارد کنید");let r=await sb.from("products").insert({user_id:currentUser.id,name,unit:pu.value||"عدد",buy_price:+pb.value||0,sell_price:+ps.value||0,stock:+pst.value||0,min_stock:+pmin.value||0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("products")};
+
+window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
+window.saveExpense=async()=>{let title=en.value.trim(),amount=+ea.value||0;if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()});if(r.error)return alert(r.error.message);await loadData();closeModal();render("finance")};
+
+window.newInvoice=()=>{
+let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><button class="secondary" onclick="addItem()">+ افزودن</button></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
+disc.oninput=calc;paid.oninput=calc;addItem()
+};
+window.addItem=()=>{
+let box=document.getElementById("items"),opts=data.products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${money(p.sell)}</option>`).join("");
+if(!opts){box.innerHTML='<div class="card">ابتدا محصول ثبت کنید.</div>';return}
+box.insertAdjacentHTML("beforeend",`<div class="item"><select class="input ip">${opts}</select><input class="input iq" type="number" min="1" value="1"><input class="input iu" readonly value="0"><input class="input ix" readonly value="0"><button class="close" onclick="this.parentNode.remove();calc()">×</button></div>`);
+box.querySelectorAll(".ip,.iq").forEach(x=>{x.oninput=calc;x.onchange=calc});calc()
+};
+function calc(){let sub=0;document.querySelectorAll("#items .item").forEach(r=>{let p=data.products.find(x=>String(x.id)===r.querySelector(".ip").value),q=+r.querySelector(".iq").value||0,u=p?.sell||0,t=u*q;sub+=t;r.querySelector(".iu").value=u;r.querySelector(".ix").value=t});let d=+disc.value||0,t=Math.max(0,sub-d),p=+paid.value||0;document.getElementById("sub").textContent=money(sub);document.getElementById("total").textContent=money(t);document.getElementById("remain").textContent=money(Math.max(0,t-p))}
+window.saveInvoice=async()=>{
+let used=[],sub=0;document.querySelectorAll("#items .item").forEach(r=>{let p=data.products.find(x=>String(x.id)===r.querySelector(".ip").value),q=+r.querySelector(".iq").value||0;if(p&&q){used.push({p,q});sub+=p.sell*q}});
+if(!used.length)return alert("حداقل یک محصول اضافه کنید");for(const x of used)if(x.q>x.p.stock)return alert("موجودی "+x.p.name+" کافی نیست");
+let d=+disc.value||0,total=Math.max(0,sub-d),pay=Math.min(total,+paid.value||0),remaining=total-pay,cid=ic.value||null,c=cid?data.customers.find(x=>String(x.id)===cid):null,no=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
+let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
+if(inv.error)return alert(inv.error.message);
+let ir=await sb.from("invoice_items").insert(used.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name,quantity:x.q,unit_price:x.p.sell,line_total:x.p.sell*x.q})));
+if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
+for(const x of used){let r=await sb.from("products").update({stock:x.p.stock-x.q}).eq("id",x.p.id).eq("user_id",currentUser.id);if(r.error)return alert(r.error.message)}
+if(c){let r=await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);if(r.error)console.error(r.error)}
+if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,customer_id:c.id,invoice_id:inv.data.id,amount:pay,note:"پرداخت هنگام صدور فاکتور"});if(r.error)console.error(r.error)}
+await loadData();closeModal();showInvoice(inv.data.id)
+};
+window.showInvoice=async id=>{
+let i=data.invoices.find(x=>String(x.id)===String(id)),r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
+if(r.error)return alert(r.error.message);let rows=(r.data||[]).map(x=>`<tr><td>${esc(x.product_name)}</td><td>${x.quantity}</td><td>${money(x.unit_price)}</td><td>${money(x.line_total)}</td></tr>`).join("");
+openModal(`<div class="modalHead"><h2>فاکتور #${i.no}</h2><button class="close" onclick="closeModal()">×</button></div><p>مشتری: <b>${esc(i.customer)}</b></p><div class="table"><table><thead><tr><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div><div class="totals"><div class="tr final"><span>مبلغ نهایی</span><b>${money(i.total)}</b></div><div class="tr"><span>پرداخت</span><b>${money(i.paid)}</b></div><div class="tr"><span>مانده</span><b>${money(i.remaining)}</b></div></div><br><button class="primary" onclick="window.print()">🖨 چاپ</button>`)
+};
+start();
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error));
+}
+</script>
+</body>
+</html>
