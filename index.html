@@ -63,7 +63,6 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
 <nav class="mobile">
 <button data-page="home" class="active">🏠<br>خانه</button>
-<button data-page="sales">🧾<br>فاکتور</button>
 <button data-page="sales" style="font-size:12px;color:#176b5b">🗂️<br>فاکتورهای قبلی</button>
 <button data-page="customers">👥<br>مشتری</button>
 <button data-page="products">📦<br>کالا</button>
@@ -174,8 +173,8 @@ function invoiceTable(a){if(!a.length)return'<div class="card">هنوز فاکت
 function sales(){main.innerHTML=`<div class="head"><div><h1>فاکتورهای قبلی</h1><div class="muted">همه فاکتورهای ثبت‌شده شما</div></div><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
 function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
 function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td></tr>`).join("")}
-function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1></div><input id="pq" class="input" placeholder="جستجو..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
-function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td><td>${p.stock} ${esc(p.unit)}</td><td>${p.stock<=p.min?'<span class="badge warn">موجودی کم</span>':'<span class="badge">موجود</span>'}</td></tr>`).join("")}
+function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1></div><input id="pq" class="input" placeholder="جستجوی محصول..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
+function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td></tr>`).join("")}
 function finance(){let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div>`}
 function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
 
@@ -208,45 +207,129 @@ window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("ن
 window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
 window.saveExpense=async()=>{let title=en.value.trim(),amount=+ea.value||0;if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()});if(r.error)return alert(r.error.message);await loadData();closeModal();render("finance")};
 
-window.addProductInInvoice=async function(){
- openModal(`<div class="modalHead"><h2>افزودن محصول</h2><button class="close" type="button">×</button></div><div class="form"><div class="field"><label>نام محصول</label><input id="ipn" class="input"></div><div class="field"><label>واحد</label><input id="ipu" class="input" placeholder="واحد"></div><div class="field"><label>قیمت خرید</label><input id="ipb" class="input" type="number" placeholder="مقدار"></div><div class="field"><label>قیمت فروش</label><input id="ips" class="input" type="number" placeholder="مقدار"></div><div class="field"><label>موجودی</label><input id="ipst" class="input" type="number" placeholder="مقدار"></div><div class="field"><label>حداقل موجودی</label><input id="ipmin" class="input" type="number" placeholder="مقدار"></div></div><br><button class="primary" onclick="saveInvoiceProduct()">افزودن به محصولات و فاکتور</button>`);
-};
-window.saveInvoiceProduct=async function(){
- const name=ipn.value.trim(); if(!name)return alert("نام محصول را وارد کنید");
- const r=await sb.from("products").insert({user_id:currentUser.id,name,unit:ipu.value||"عدد",buy_price:+ipb.value||0,sell_price:+ips.value||0,stock:+ipst.value||0,min_stock:+ipmin.value||0}).select().single();
- if(r.error)return alert(r.error.message);
- await loadData();
- const product=data.products.find(p=>String(p.id)===String(r.data.id));
- closeModal();
- newInvoice(product.id);
-};
 function openInvoiceModal(preselect=null){ newInvoice(preselect); }
 
 window.newInvoice=(preselect=null)=>{
-let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
-openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><div style="display:flex;gap:6px"><button class="secondary" onclick="addItem()">+ افزودن</button><button class="secondary" onclick="addProductInInvoice()">+ افزودن محصول</button></div></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><div class="field"><label>شماره کارت</label><input id="cardNo" class="input" type="text" inputmode="numeric" placeholder="شماره کارت (اختیاری)"></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
-disc.oninput=calc;paid.oninput=calc;addItem();if(preselect){const s=document.querySelector("#items .ip");if(s){s.value=String(preselect);calc()}}
+ let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+ let productOpts=data.products.map(p=>`<option value="${esc(p.name)}"></option>`).join("");
+ openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div>
+ <div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
+ <div class="sectionTitle"><h3>اقلام فاکتور</h3><span class="muted">نام محصول را بنویسید؛ محصول موجود همان‌جا پیدا می‌شود.</span></div>
+ <datalist id="productList">${productOpts}</datalist>
+ <div id="items"></div>
+ <div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div>
+ <div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div>
+ <div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div>
+ <div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div>
+ <div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div>
+ <div class="field"><label>شماره کارت</label><input id="cardNo" class="input" type="text" inputmode="numeric" placeholder="شماره کارت (اختیاری)"></div>
+ <br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
+ disc.oninput=calc; paid.oninput=calc;
+ addItem();
+ if(preselect){
+   const first=document.querySelector("#items .ipName");
+   if(first){
+     const product=data.products.find(x=>String(x.id)===String(preselect));
+     if(product){first.value=product.name;selectInvoiceProduct(first,false);}
+   }
+ }
 };
+
 window.addItem=()=>{
-let box=document.getElementById("items"),opts=data.products.map(p=>`<option value="${p.id}">${esc(p.name)} — ${money(p.sell)}</option>`).join("");
-if(!opts){box.innerHTML='<div class="card">ابتدا محصول ثبت کنید.</div>';return}
-box.insertAdjacentHTML("beforeend",`<div class="item"><select class="input ip">${opts}</select><input class="input iq" type="number" min="1" value="1"><input class="input iu" readonly value="0"><input class="input ix" readonly value="0"><button class="close" onclick="this.parentNode.remove();calc()">×</button></div>`);
-box.querySelectorAll(".ip,.iq").forEach(x=>{x.oninput=calc;x.onchange=calc});calc()
+ const box=document.getElementById("items");
+ if(!box)return;
+ box.insertAdjacentHTML("beforeend",`<div class="item">
+   <input class="input ipName" list="productList" autocomplete="off" placeholder="نام محصول را بنویسید">
+   <input class="input iq" type="number" min="1" value="1" placeholder="تعداد">
+   <input class="input iu" readonly placeholder="قیمت واحد">
+   <input class="input ix" readonly placeholder="قیمت کل">
+   <button class="close" type="button" aria-label="حذف">×</button>
+ </div>`);
+ const row=box.lastElementChild;
+ const name=row.querySelector(".ipName");
+ const qty=row.querySelector(".iq");
+ name.addEventListener("input",()=>searchInvoiceProduct(name));
+ name.addEventListener("change",()=>selectInvoiceProduct(name,true));
+ name.addEventListener("blur",()=>setTimeout(()=>selectInvoiceProduct(name,true),120));
+ qty.addEventListener("input",calc);
+ row.querySelector(".close").addEventListener("click",()=>{row.remove();if(!document.querySelector("#items .item"))addItem();calc()});
+ calc();
 };
-function calc(){let sub=0;document.querySelectorAll("#items .item").forEach(r=>{let p=data.products.find(x=>String(x.id)===r.querySelector(".ip").value),q=+r.querySelector(".iq").value||0,u=p?.sell||0,t=u*q;sub+=t;r.querySelector(".iu").value=u;r.querySelector(".ix").value=t});let d=+disc.value||0,t=Math.max(0,sub-d),p=+paid.value||0;document.getElementById("sub").textContent=money(sub);document.getElementById("total").textContent=money(t);document.getElementById("remain").textContent=money(Math.max(0,t-p))}
+
+function findProductByName(name){
+ const n=String(name||"").trim();
+ if(!n)return null;
+ return data.products.find(p=>p.name.trim()===n) || data.products.find(p=>p.name.includes(n));
+}
+function searchInvoiceProduct(input){
+ const value=input.value.trim();
+ const p=findProductByName(value);
+ if(p){selectInvoiceProduct(input,true);return}
+ const box=input.closest(".item");
+ if(box){box.querySelector(".iu").value="";box.querySelector(".ix").value="";}
+ calc();
+}
+function selectInvoiceProduct(input,autoNext=true){
+ const row=input.closest(".item");
+ const p=findProductByName(input.value);
+ if(!row)return;
+ if(!p){
+   row.dataset.productId="";
+   row.querySelector(".iu").value="";
+   row.querySelector(".ix").value="";
+   calc();
+   return;
+ }
+ input.value=p.name;
+ row.dataset.productId=String(p.id);
+ row.querySelector(".iu").value=p.sell||0;
+ calc();
+ const rows=document.querySelectorAll("#items .item");
+ if(autoNext && rows[rows.length-1]===row){
+   addItem();
+   const last=document.querySelector("#items .item:last-child .ipName");
+   if(last)last.focus();
+ }
+}
+
+function calc(){
+ let sub=0;
+ document.querySelectorAll("#items .item").forEach(r=>{
+   const id=r.dataset.productId;
+   const p=id?data.products.find(x=>String(x.id)===String(id)):findProductByName(r.querySelector(".ipName")?.value);
+   const q=+r.querySelector(".iq").value||0;
+   const u=p?.sell||0,t=u*q;
+   sub+=t;
+   r.querySelector(".iu").value=u?money(u):"";
+   r.querySelector(".ix").value=t?money(t):"";
+ });
+ let d=+disc.value||0,t=Math.max(0,sub-d),pay=+paid.value||0;
+ document.getElementById("sub").textContent=money(sub);
+ document.getElementById("total").textContent=money(t);
+ document.getElementById("remain").textContent=money(Math.max(0,t-pay));
+}
+
 window.saveInvoice=async()=>{
-let used=[],sub=0;document.querySelectorAll("#items .item").forEach(r=>{let p=data.products.find(x=>String(x.id)===r.querySelector(".ip").value),q=+r.querySelector(".iq").value||0;if(p&&q){used.push({p,q});sub+=p.sell*q}});
-if(!used.length)return alert("حداقل یک محصول اضافه کنید");for(const x of used)if(x.q>x.p.stock)return alert("موجودی "+x.p.name+" کافی نیست");
-let d=+disc.value||0,total=Math.max(0,sub-d),pay=Math.min(total,+paid.value||0),remaining=total-pay,cid=ic.value||null,c=cid?data.customers.find(x=>String(x.id)===cid):null,no=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
-let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
-if(inv.error)return alert(inv.error.message);
-let ir=await sb.from("invoice_items").insert(used.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name,quantity:x.q,unit_price:x.p.sell,line_total:x.p.sell*x.q})));
-if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
-for(const x of used){let r=await sb.from("products").update({stock:x.p.stock-x.q}).eq("id",x.p.id).eq("user_id",currentUser.id);if(r.error)return alert(r.error.message)}
-if(c){let r=await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);if(r.error)console.error(r.error)}
-if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,customer_id:c.id,invoice_id:inv.data.id,amount:pay,note:"پرداخت هنگام صدور فاکتور"});if(r.error)console.error(r.error)}
-await loadData();try{localStorage.setItem("hesabyar_card_"+inv.data.id,(document.getElementById("cardNo")?.value||"").trim())}catch(e){}closeModal();showInvoice(inv.data.id)
+ let used=[],sub=0;
+ document.querySelectorAll("#items .item").forEach(r=>{
+   const id=r.dataset.productId;
+   const p=id?data.products.find(x=>String(x.id)===String(id)):findProductByName(r.querySelector(".ipName")?.value);
+   const q=+r.querySelector(".iq").value||0;
+   if(p&&q){used.push({p,q});sub+=p.sell*q}
+ });
+ if(!used.length)return alert("حداقل یک محصول انتخاب کنید.");
+ let d=+disc.value||0,total=Math.max(0,sub-d),pay=Math.min(total,+paid.value||0),remaining=total-pay,cid=ic.value||null,c=cid?data.customers.find(x=>String(x.id)===cid):null,no=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
+ let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
+ if(inv.error)return alert(inv.error.message);
+ let ir=await sb.from("invoice_items").insert(used.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name,quantity:x.q,unit_price:x.p.sell,line_total:x.p.sell*x.q})));
+ if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
+ if(c){let r=await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);if(r.error)console.error(r.error)}
+ if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,customer_id:c.id,invoice_id:inv.data.id,amount:pay,note:"پرداخت هنگام صدور فاکتور"});if(r.error)console.error(r.error)}
+ await loadData();
+ try{localStorage.setItem("hesabyar_card_"+inv.data.id,(document.getElementById("cardNo")?.value||"").trim())}catch(e){}
+ closeModal();showInvoice(inv.data.id)
 };
+
 window.printInvoice=function(){
  const modal=document.getElementById("modal");
  const box=document.getElementById("box");
