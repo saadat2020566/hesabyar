@@ -32,7 +32,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .mobile{display:none}
 @media(max-width:800px){
 .side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}.item{grid-template-columns:1.2fr .55fr .75fr .75fr 32px}}
-@media print{body{background:#fff!important}.top,.side,.mobile,.noPrint{display:none!important}.wrap{display:block!important;min-height:0!important}main{padding:0!important}.modal{position:static!important;display:block!important;background:#fff!important;padding:0!important}.modal .box{width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;padding:0!important}.table{overflow:visible!important}.modalHead .close{display:none!important}.printTarget{display:block!important}}
+@media print{body{background:#fff!important}.top,.side,.mobile,.noPrint,#main{display:none!important}.wrap{display:block!important;min-height:0!important}.modal{position:static!important;display:block!important;background:#fff!important;padding:0!important}.modal .box{width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;padding:0!important}.table{overflow:visible!important}.modalHead{display:none!important}.modal .box>.invoicePrint{display:block!important}.modal .box>.invoicePrint~*{display:none!important}.printTarget{display:block!important}}
+
+.invoicePrint{background:#fff;color:#111;padding:8px;max-width:760px;margin:auto}.invoicePrint h2{margin:0 0 8px;text-align:center}.invoicePrint .invMeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:12px}.invoicePrint table{width:100%;border-collapse:collapse}.invoicePrint th,.invoicePrint td{border:1px solid #ddd;padding:7px;text-align:right}.invoicePrint .sum{margin-top:12px;border-top:2px solid #222;padding-top:8px}.invoicePrint .sum div{display:flex;justify-content:space-between;padding:4px 0}.invoicePrint .cardNo{margin-top:14px;border:1px dashed #888;padding:9px;border-radius:8px}.invoicePrint .brand{font-size:13px;color:#555;text-align:center;margin-top:16px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -165,7 +167,7 @@ function home(){
  const debt=data.customers.reduce((a,c)=>a+c.debt,0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button> <button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
- <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
+ <div class="actions"><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
  `;
 }
 function invoiceTable(a){if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th></tr></thead><tbody>${a.map(i=>`<tr onclick="showInvoice(${i.id})" style="cursor:pointer"><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td></tr>`).join("")}</tbody></table></div>`}
@@ -222,7 +224,7 @@ function openInvoiceModal(preselect=null){ newInvoice(preselect); }
 
 window.newInvoice=(preselect=null)=>{
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
-openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><div style="display:flex;gap:6px"><button class="secondary" onclick="addItem()">+ افزودن</button><button class="secondary" onclick="addProductInInvoice()">+ افزودن محصول</button></div></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
+openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><div style="display:flex;gap:6px"><button class="secondary" onclick="addItem()">+ افزودن</button><button class="secondary" onclick="addProductInInvoice()">+ افزودن محصول</button></div></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" placeholder="مقدار" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><div class="field"><label>شماره کارت</label><input id="cardNo" class="input" type="text" inputmode="numeric" placeholder="شماره کارت (اختیاری)"></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
 disc.oninput=calc;paid.oninput=calc;addItem();if(preselect){const s=document.querySelector("#items .ip");if(s){s.value=String(preselect);calc()}}
 };
 window.addItem=()=>{
@@ -243,7 +245,7 @@ if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return aler
 for(const x of used){let r=await sb.from("products").update({stock:x.p.stock-x.q}).eq("id",x.p.id).eq("user_id",currentUser.id);if(r.error)return alert(r.error.message)}
 if(c){let r=await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);if(r.error)console.error(r.error)}
 if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,customer_id:c.id,invoice_id:inv.data.id,amount:pay,note:"پرداخت هنگام صدور فاکتور"});if(r.error)console.error(r.error)}
-await loadData();closeModal();showInvoice(inv.data.id)
+await loadData();try{localStorage.setItem("hesabyar_card_"+inv.data.id,(document.getElementById("cardNo")?.value||"").trim())}catch(e){}closeModal();showInvoice(inv.data.id)
 };
 window.printInvoice=function(){
  const modal=document.getElementById("modal");
@@ -263,9 +265,28 @@ window.printInvoice=function(){
 };
 
 window.showInvoice=async id=>{
-let i=data.invoices.find(x=>String(x.id)===String(id)); if(!i)return alert("فاکتور پیدا نشد."); let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
-if(r.error)return alert(r.error.message);let rows=(r.data||[]).map(x=>`<tr><td>${esc(x.product_name)}</td><td>${x.quantity}</td><td>${money(x.unit_price)}</td><td>${money(x.line_total)}</td></tr>`).join("");
-openModal(`<div class="modalHead"><h2>فاکتور #${i.no}</h2><button class="close" type="button">×</button></div><p>مشتری: <b>${esc(i.customer)}</b></p><div class="table"><table><thead><tr><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div><div class="totals"><div class="tr final"><span>مبلغ نهایی</span><b>${money(i.total)}</b></div><div class="tr"><span>پرداخت</span><b>${money(i.paid)}</b></div><div class="tr"><span>مانده</span><b>${money(i.remaining)}</b></div></div><br><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary noPrint" onclick="printInvoice()">📄 ذخیره PDF / چاپ</button><button class="secondary noPrint" onclick="closeModal()">↩ بازگشت</button></div>`)
+let i=data.invoices.find(x=>String(x.id)===String(id)); 
+if(!i)return alert("فاکتور پیدا نشد."); 
+let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
+if(r.error)return alert(r.error.message);
+let rows=(r.data||[]).map((x,n)=>`<tr><td>${n+1}</td><td>${esc(x.product_name)}</td><td>${x.quantity}</td><td>${money(x.unit_price)}</td><td>${money(x.line_total)}</td></tr>`).join("");
+let cardNo="";
+try{cardNo=localStorage.getItem("hesabyar_card_"+i.id)||""}catch(e){}
+openModal(`<div class="invoicePrint">
+<h2>فاکتور فروش</h2>
+<div class="invMeta"><span>شماره فاکتور: <b>#${i.no}</b></span><span>تاریخ: <b>${esc(i.date)}</b></span><span>مشتری: <b>${esc(i.customer)}</b></span></div>
+<div class="table"><table><thead><tr><th>ردیف</th><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div>
+<div class="sum">
+<div><span>جمع کالا</span><b>${money(i.subtotal)}</b></div>
+<div><span>تخفیف</span><b>${money(i.discount)}</b></div>
+<div><span>مبلغ نهایی</span><b>${money(i.total)}</b></div>
+<div><span>پرداخت</span><b>${money(i.paid)}</b></div>
+<div><span>مانده</span><b>${money(i.remaining)}</b></div>
+</div>
+<div class="cardNo">شماره کارت: <b>${esc(cardNo||"—")}</b></div>
+<div class="brand">حساب‌یار</div>
+</div>
+<div class="noPrint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="primary" onclick="printInvoice()">📄 ذخیره PDF / چاپ</button><button class="secondary" onclick="closeModal()">↩ بازگشت</button></div>`)
 };
 start();
 })();
