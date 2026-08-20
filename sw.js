@@ -1,4 +1,4 @@
-const C="hesabyar-pwa-v4",S=["./","./index.html","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png"];
+const C="hesabyar-v5-fixed",S=["./","./index.html","./manifest.webmanifest","./icons/icon-192.png","./icons/icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(S)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener("fetch",e=>{if(new URL(e.request.url).origin!==self.location.origin)return;e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{if(r.ok){const x=r.clone();caches.open(C).then(a=>a.put(e.request,x))}return r}).catch(()=>caches.match("./index.html"))) )});

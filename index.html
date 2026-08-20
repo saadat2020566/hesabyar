@@ -113,17 +113,27 @@ window.doLogin=async function(){
 };
 window.logout=async function(){await sb.auth.signOut();currentUser=null;authScreen("از حساب خارج شدید.");};
 
+async function fetchAllInvoices(){
+ const all=[]; const pageSize=1000;
+ for(let from=0;;from+=pageSize){
+   const r=await sb.from("invoices").select("*").order("invoice_no",{ascending:false}).range(from,from+pageSize-1);
+   if(r.error)throw r.error;
+   const rows=r.data||[]; all.push(...rows);
+   if(rows.length<pageSize)break;
+ }
+ return all;
+}
 async function loadData(){
  const [c,p,i,e]=await Promise.all([
   sb.from("customers").select("*").order("id"),
   sb.from("products").select("*").order("id"),
-  sb.from("invoices").select("*").order("invoice_no",{ascending:false}),
+  fetchAllInvoices(),
   sb.from("expenses").select("*").order("created_at",{ascending:false})
  ]);
- for(const r of [c,p,i,e])if(r.error)throw r.error;
+ for(const r of [c,e])if(r.error)throw r.error;
  data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
  data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
- data.invoices=(i.data||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.invoices=(i||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
  data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
 }
 sb.auth.onAuthStateChange((event, session)=>{
@@ -148,8 +158,8 @@ async function start(){
 let currentPage="home", modalOpen=false;
 document.querySelectorAll("[data-page]").forEach(b=>b.onclick=()=>render(b.getAttribute("data-page"),true));
 function render(p,push=true){if(!currentUser)return authScreen();currentPage=p;nav(p);if(push&&p!==history.state?.page)history.pushState({page:p},"",location.href);({home,sales,customers,products,finance,reports}[p]||home)()}
-history.replaceState({page:"home"},"",location.href);
-window.addEventListener("popstate",()=>{if(modalOpen){closeModal();return}render(history.state?.page||"home",false)});
+history.replaceState({page:"home",modal:false},document.title,location.href);
+window.addEventListener("popstate",()=>{if(modalOpen){closeModal(true);return}render(history.state?.page||"home",false)});
 
 function home(){
  const debt=data.customers.reduce((a,c)=>a+c.debt,0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
@@ -167,9 +177,25 @@ function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.
 function finance(){let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div>`}
 function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
 
-function openModal(h){document.getElementById("box").innerHTML=h;document.getElementById("modal").classList.add("open");modalOpen=true}
-function closeModal(){document.getElementById("modal").classList.remove("open");modalOpen=false}
-document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+function openModal(h){
+ const m=document.getElementById("modal");
+ document.getElementById("box").innerHTML=h;
+ m.classList.add("open");
+ modalOpen=true;
+ if(history.state?.modal!==true) history.pushState({page:currentPage,modal:true},document.title,location.href);
+}
+function closeModal(skipHistory=false){
+ const m=document.getElementById("modal");
+ m.classList.remove("open");
+ document.getElementById("box").innerHTML="";
+ const wasOpen=modalOpen;
+ modalOpen=false;
+ if(wasOpen && !skipHistory && history.state?.modal===true) history.back();
+}
+document.getElementById("modal").addEventListener("click",function(e){
+ if(e.target===this || e.target.closest(".modalHead .close")) closeModal();
+});
+document.addEventListener("keydown",function(e){if(e.key==="Escape" && modalOpen) closeModal();});
 
 window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
 window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
@@ -189,13 +215,14 @@ window.saveInvoiceProduct=async function(){
  if(r.error)return alert(r.error.message);
  await loadData();
  const product=data.products.find(p=>String(p.id)===String(r.data.id));
- openInvoiceModal(product.id);
+ closeModal();
+ newInvoice(product.id);
 };
 function openInvoiceModal(preselect=null){ newInvoice(preselect); }
 
 window.newInvoice=(preselect=null)=>{
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
-openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><div style="display:flex;gap:6px"><button class="secondary" onclick="addProductInInvoice()">+ افزودن محصول</button><button class="secondary" onclick="addItem()">+ افزودن</button></div></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
+openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div><div class="sectionTitle"><h3>اقلام</h3><div style="display:flex;gap:6px"><button class="secondary" onclick="addProductInInvoice()">+ افزودن محصول</button></div></div><div id="items"></div><div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
 disc.oninput=calc;paid.oninput=calc;addItem();if(preselect){const s=document.querySelector("#items .ip");if(s){s.value=String(preselect);calc()}}
 };
 window.addItem=()=>{
@@ -219,14 +246,22 @@ if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,cust
 await loadData();closeModal();showInvoice(inv.data.id)
 };
 window.printInvoice=function(){
- const oldTitle=document.title;
- document.title="فاکتور حساب‌یار";
- window.print();
- setTimeout(()=>{document.title=oldTitle},1000);
+ const box=document.getElementById("box");
+ if(!box || !box.innerHTML.trim()) return alert("فاکتور برای چاپ آماده نیست.");
+ const content=box.innerHTML;
+ const w=window.open("about:blank","_blank","noopener,noreferrer");
+ if(!w){
+   alert("پنجره چاپ توسط مرورگر مسدود شده است. از تنظیمات مرورگر اجازه باز شدن پنجره را بدهید.");
+   return;
+ }
+ const css=`*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#18221f;margin:0;padding:24px;background:#fff}.box{max-width:800px;margin:auto}.modalHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.close,.noPrint{display:none!important}.table{overflow:visible!important;border:1px solid #dfe6e3;border-radius:10px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #e9eeec;text-align:right;font-size:12px}th{background:#f3f7f5}.totals{margin-top:14px;background:#f3f7f5;padding:12px;border-radius:10px}.tr{display:flex;justify-content:space-between;margin:7px 0}.final{font-size:16px;font-weight:bold;border-top:1px solid #dfe6e3;padding-top:9px}@page{size:auto;margin:12mm}@media print{body{padding:0}}`;
+ w.document.open();
+ w.document.write('<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاکتور حساب‌یار</title><style>'+css+'</style></head><body><div class="box">'+content+'</div><script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
+ w.document.close();
 };
 
 window.showInvoice=async id=>{
-let i=data.invoices.find(x=>String(x.id)===String(id)),r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
+let i=data.invoices.find(x=>String(x.id)===String(id)); if(!i)return alert("فاکتور پیدا نشد."); let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
 if(r.error)return alert(r.error.message);let rows=(r.data||[]).map(x=>`<tr><td>${esc(x.product_name)}</td><td>${x.quantity}</td><td>${money(x.unit_price)}</td><td>${money(x.line_total)}</td></tr>`).join("");
 openModal(`<div class="modalHead"><h2>فاکتور #${i.no}</h2><button class="close" onclick="closeModal()">×</button></div><p>مشتری: <b>${esc(i.customer)}</b></p><div class="table"><table><thead><tr><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div><div class="totals"><div class="tr final"><span>مبلغ نهایی</span><b>${money(i.total)}</b></div><div class="tr"><span>پرداخت</span><b>${money(i.paid)}</b></div><div class="tr"><span>مانده</span><b>${money(i.remaining)}</b></div></div><br><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary noPrint" onclick="printInvoice()">📄 ذخیره PDF / چاپ</button><button class="secondary noPrint" onclick="closeModal()">↩ بازگشت</button></div>`)
 };
