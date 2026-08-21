@@ -370,20 +370,14 @@ window.saveInvoice=async()=>{
 };
 
 window.printInvoice=function(){
- const modal=document.getElementById("modal");
- const box=document.getElementById("box");
- if(!modal||!box||!modal.classList.contains("open")) return;
- document.body.classList.add("printInvoiceMode");
- modal.classList.add("printTarget");
- setTimeout(()=>{
-   try{ window.print(); }
-   finally{
-     setTimeout(()=>{
-       modal.classList.remove("printTarget");
-       document.body.classList.remove("printInvoiceMode");
-     },500);
-   }
- },100);
+  const box=document.getElementById("box") || document.querySelector(".invoicePreview") || document.querySelector(".invoice");
+  if(!box){ alert("پیش‌نمایش فاکتور پیدا نشد."); return; }
+  const w=window.open("","_blank");
+  if(!w){ alert("پنجره چاپ توسط مرورگر مسدود شده است."); return; }
+  const css=`@page{size:A4;margin:10mm}body{font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#111;margin:0;padding:0;background:#fff}*{box-sizing:border-box}.noPrint,.close,button{display:none!important}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px;text-align:right;font-size:11px}.totals{margin-top:12px}.tr{display:flex;justify-content:space-between;margin:5px 0}`;
+  w.document.write('<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور تحویل کالا</title><style>'+css+'</style></head><body>'+box.outerHTML+'</body></html>');
+  w.document.close();
+  w.onload=function(){setTimeout(function(){w.focus();w.print();},250)};
 };
 
 window.closeInvoicePreview=function(){ closeModal(); render("sales",false); };
@@ -413,6 +407,19 @@ openModal(`<div class="invoicePrint">
 };
 start();
 })();
+
+window.submitInvoice=async function(){
+  try{
+    if(typeof window.saveInvoice==="function"){ await window.saveInvoice(); return; }
+    if(typeof window.issueInvoice==="function"){ await window.issueInvoice(); return; }
+    if(typeof window.createInvoice==="function"){ await window.createInvoice(); return; }
+    if(typeof window.submitCurrentInvoice==="function"){ await window.submitCurrentInvoice(); return; }
+    alert("ثبت فاکتور: تابع ثبت در این نسخه پیدا نشد.");
+  }catch(err){
+    console.error(err);
+    alert("ثبت فاکتور انجام نشد. لطفاً دوباره تلاش کنید.");
+  }
+};
 </script>
 </body>
 </html>
