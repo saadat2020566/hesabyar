@@ -36,7 +36,15 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
 .invoicePrint{background:#fff;color:#111;padding:8px;max-width:760px;margin:auto}.invoicePrint h2{margin:0 0 8px;text-align:center}.invoicePrint .invMeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:12px}.invoicePrint table{width:100%;border-collapse:collapse}.invoicePrint th,.invoicePrint td{border:1px solid #ddd;padding:7px;text-align:right}.invoicePrint .sum{margin-top:12px;border-top:2px solid #222;padding-top:8px}.invoicePrint .sum div{display:flex;justify-content:space-between;padding:4px 0}.invoicePrint .cardNo{margin-top:14px;border:1px dashed #888;padding:9px;border-radius:8px}.invoicePrint .brand{font-size:13px;color:#555;text-align:center;margin-top:16px}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+window.openPreviousInvoice=function(id){
+  const inv=(data.invoices||[]).find(x=>String(x.id)===String(id) || String(x.invoice_no)===String(id));
+  if(!inv){ alert("فاکتور پیدا نشد."); return; }
+  if(typeof showInvoice==="function"){ showInvoice(inv); return; }
+  if(typeof previewInvoice==="function"){ previewInvoice(inv); return; }
+  alert("پیش‌نمایش فاکتور در این نسخه پیدا نشد.");
+};
+</script>
 <style>
 .authMode #main{min-height:100vh;display:flex;align-items:center;justify-content:center}
 .authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
@@ -200,7 +208,9 @@ document.getElementById("modal").addEventListener("click",function(e){
 });
 document.addEventListener("keydown",function(e){if(e.key==="Escape" && modalOpen) closeModal();});
 
-window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
+window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button">×</button></div><div class="form">
+<div class="field"><label>شماره فاکتور</label><input id="invoiceNo" class="input" type="text" placeholder="شماره فاکتور"></div>
+<div class="field"><label>تاریخ</label><input id="invoiceDate" class="input" type="text" placeholder="تاریخ"></div><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
 window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
 
 
@@ -245,7 +255,7 @@ function captureInvoiceDraft(){
    productId:r.dataset.productId||""
  }));
  return {
-   customer:document.getElementById("ic")?.value||"",
+   invoiceNo:document.getElementById("invoiceNo")?.value||"", invoiceDate:document.getElementById("invoiceDate")?.value||"", customer:document.getElementById("ic")?.value||"",
    discount:document.getElementById("disc")?.value||"",
    paid:document.getElementById("paid")?.value||"",
    card:document.getElementById("cardNo")?.value||"",
@@ -256,7 +266,7 @@ function captureInvoiceDraft(){
 function restoreInvoiceDraft(draft){
  if(!draft)return;
  const ic=document.getElementById("ic"), disc=document.getElementById("disc"), paid=document.getElementById("paid"), card=document.getElementById("cardNo");
- if(ic)ic.value=draft.customer||"";
+ const ino=document.getElementById("invoiceNo"), idt=document.getElementById("invoiceDate"); if(ino)ino.value=draft.invoiceNo||""; if(idt)idt.value=draft.invoiceDate||""; if(ic)ic.value=draft.customer||"";
  if(disc)disc.value=draft.discount||"";
  if(paid)paid.value=draft.paid||"";
  if(card)card.value=draft.card||"";
@@ -319,7 +329,7 @@ window.registerAddedItem=function(){
  if(!n)return alert("نام محصول را وارد کنید.");
  if(q<=0)return alert("تعداد را وارد کنید.");
  if(u<0)return alert("قیمت واحد صحیح نیست.");
- const d=window._invoiceDraft||{customer:"",discount:"",paid:"",card:"",rows:[]};
+ const d=window._invoiceDraft||{invoiceNo:"",invoiceDate:"",customer:"",discount:"",paid:"",card:"",rows:[]};
  d.rows=d.rows||[];
  const p=findProductByName(n);
  d.rows.push({name:n,qty:String(q),unit:String(u),total:String(q*u),productId:p?String(p.id):""});
@@ -425,10 +435,25 @@ window.printInvoice=function(){
   if(!box){ alert("پیش‌نمایش فاکتور پیدا نشد."); return; }
   const w=window.open("","_blank");
   if(!w){ alert("پنجره چاپ توسط مرورگر مسدود شده است."); return; }
-  const css=`@page{size:A4;margin:10mm}body{font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#111;margin:0;padding:0;background:#fff}*{box-sizing:border-box}.noPrint,.close,button{display:none!important}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px;text-align:right;font-size:11px}.totals{margin-top:12px}.tr{display:flex;justify-content:space-between;margin:5px 0}`;
-  w.document.write('<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور تحویل کالا</title><style>'+css+'</style></head><body>'+box.outerHTML+'</body></html>');
+  const no=document.getElementById("invoiceNo")?.value||"";
+  const dt=document.getElementById("invoiceDate")?.value||"";
+  const customer=document.getElementById("ic")?.value||"";
+  const card=document.getElementById("cardNo")?.value||"";
+  const css=`@page{size:A4;margin:10mm}body{font-family:Tahoma,Arial,sans-serif;direction:rtl;color:#111;margin:0;background:#fff}*{box-sizing:border-box}.noPrint,.close,button{display:none!important}.head{display:flex;justify-content:space-between;border:1px solid #333;padding:12px;margin-bottom:10px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;border:1px solid #333;padding:8px;margin-bottom:10px}.meta div{padding:4px}.invoiceTable{width:100%;border-collapse:collapse}.invoiceTable th,.invoiceTable td{border:1px solid #333;padding:7px;text-align:center;font-size:11px}.invoiceTable th{font-weight:bold}.bottom{border:1px solid #333;border-top:0;padding:10px}.totals{display:flex;justify-content:space-between;margin:5px 0}@media print{body{padding:0}}`;
+  const table=box.querySelector("table");
+  let rows="";
+  if(table){
+    rows=table.outerHTML;
+    rows=rows.replace("<table","<table class='invoiceTable'");
+  }
+  const items=rows || box.innerHTML;
+  w.document.write(`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فاکتور تحویل کالا</title><style>${css}</style></head><body>
+  <div class="head"><strong>فاکتور تحویل کالا</strong><span>شماره فاکتور: ${no}</span><span>تاریخ: ${dt}</span></div>
+  <div class="meta"><div>نام مشتری: ${customer}</div><div>شماره کارت: ${card}</div></div>
+  ${items}
+  </body></html>`);
   w.document.close();
-  w.onload=function(){setTimeout(function(){w.focus();w.print();},250)};
+  w.onload=()=>setTimeout(()=>{w.focus();w.print()},250);
 };
 
 window.closeInvoicePreview=function(){ closeModal(); render("sales",false); };
