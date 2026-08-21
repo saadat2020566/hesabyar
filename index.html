@@ -32,7 +32,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .mobile{display:none}
 @media(max-width:800px){
 .side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}.item{grid-template-columns:1.2fr .55fr .75fr .75fr 32px}}
-@media print{body{background:#fff!important}.top,.side,.mobile,.noPrint,#main{display:none!important}.wrap{display:block!important;min-height:0!important}.modal{position:static!important;display:block!important;background:#fff!important;padding:0!important}.modal .box{width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;padding:0!important}.table{overflow:visible!important}.modalHead{display:none!important}.modal .box>.invoicePrint{display:block!important}.modal .box>.invoicePrint~*{display:none!important}.printTarget{display:block!important}}
+@media print{@page{size:A4;margin:10mm}body{background:#fff!important}.top,.side,.mobile,.noPrint,#main{display:none!important}.wrap{display:block!important;min-height:0!important}.modal{position:static!important;display:block!important;background:#fff!important;padding:0!important}.modal .box{width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;border-radius:0!important;box-shadow:none!important;padding:0!important}.table{overflow:visible!important}.modalHead{display:none!important}.modal .box>.invoicePrint{display:block!important}.modal .box>.invoicePrint~*{display:none!important}.printTarget{display:block!important}}
 
 .invoicePrint{background:#fff;color:#111;padding:8px;max-width:760px;margin:auto}.invoicePrint h2{margin:0 0 8px;text-align:center}.invoicePrint .invMeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:12px}.invoicePrint table{width:100%;border-collapse:collapse}.invoicePrint th,.invoicePrint td{border:1px solid #ddd;padding:7px;text-align:right}.invoicePrint .sum{margin-top:12px;border-top:2px solid #222;padding-top:8px}.invoicePrint .sum div{display:flex;justify-content:space-between;padding:4px 0}.invoicePrint .cardNo{margin-top:14px;border:1px dashed #888;padding:9px;border-radius:8px}.invoicePrint .brand{font-size:13px;color:#555;text-align:center;margin-top:16px}
 </style>
@@ -214,7 +214,7 @@ window.newInvoice=(preselect=null)=>{
  let productOpts=data.products.map(p=>`<option value="${esc(p.name)}"></option>`).join("");
  openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div>
  <div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
- <div class="sectionTitle"><h3>اقلام فاکتور</h3><span class="muted">نام محصول را بنویسید؛ محصول موجود همان‌جا پیدا می‌شود.</span></div>
+ <div class="sectionTitle"><div><h3>اقلام فاکتور</h3><span class="muted">برای اضافه کردن هر محصول روی «افزودن» بزنید.</span></div><button class="secondary" type="button" onclick="openAddItemPage()">➕ افزودن</button></div>
  <datalist id="productList">${productOpts}</datalist>
  <div id="items"></div>
  <div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div>
@@ -225,7 +225,6 @@ window.newInvoice=(preselect=null)=>{
  <div class="field"><label>شماره کارت</label><input id="cardNo" class="input" type="text" inputmode="numeric" placeholder="شماره کارت (اختیاری)"></div>
  <br><button class="primary" onclick="saveInvoice()">صدور فاکتور</button>`);
  disc.oninput=calc; paid.oninput=calc;
- addItem();
  if(preselect){
    const first=document.querySelector("#items .ipName");
    if(first){
@@ -233,6 +232,50 @@ window.newInvoice=(preselect=null)=>{
      if(product){first.value=product.name;selectInvoiceProduct(first,false);}
    }
  }
+};
+
+window.openAddItemPage=function(){
+ const productOpts=data.products.map(p=>`<option value="${esc(p.name)}"></option>`).join("");
+ openModal(`<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" type="button">×</button></div>
+ <datalist id="addProductList">${productOpts}</datalist>
+ <div class="form">
+  <div class="field full"><label>نام محصول</label><input id="addName" class="input" list="addProductList" autocomplete="off" placeholder="نام محصول را بنویسید"></div>
+  <div class="field"><label>تعداد</label><input id="addQty" class="input" type="number" min="1" placeholder="تعداد"></div>
+  <div class="field"><label>قیمت واحد</label><input id="addUnit" class="input" type="number" min="0" placeholder="قیمت واحد"></div>
+  <div class="field full"><label>قیمت کل</label><input id="addTotal" class="input" type="number" readonly placeholder="تعداد × قیمت واحد"></div>
+ </div>
+ <br><button class="primary fullBtn" type="button" onclick="registerAddedItem()">ثبت</button>`);
+ const n=document.getElementById("addName"),q=document.getElementById("addQty"),u=document.getElementById("addUnit"),t=document.getElementById("addTotal");
+ const calcAdd=()=>{t.value=(Number(q.value||0)*Number(u.value||0))||""};
+ q.addEventListener("input",calcAdd);u.addEventListener("input",calcAdd);
+ n.addEventListener("input",()=>{
+   const p=findProductByName(n.value);
+   if(p){u.value=p.sell||0;calcAdd();}
+ });
+};
+window.registerAddedItem=function(){
+ const n=(document.getElementById("addName")?.value||"").trim();
+ const q=Number(document.getElementById("addQty")?.value||0);
+ const u=Number(document.getElementById("addUnit")?.value||0);
+ if(!n)return alert("نام محصول را وارد کنید.");
+ if(q<=0)return alert("تعداد را وارد کنید.");
+ if(u<0)return alert("قیمت واحد صحیح نیست.");
+ const box=document.getElementById("items");
+ if(!box)return;
+ const p=findProductByName(n);
+ box.insertAdjacentHTML("beforeend",`<div class="item">
+   <input class="input ipName" list="productList" autocomplete="off" placeholder="نام محصول را بنویسید" value="${esc(n)}">
+   <input class="input iq" type="number" min="1" value="${q}">
+   <input class="input iu" readonly value="${u}">
+   <input class="input ix" readonly value="${q*u}">
+   <button class="close" type="button" aria-label="حذف">×</button>
+ </div>`);
+ const row=box.lastElementChild;
+ if(p)row.dataset.productId=String(p.id);
+ const qty=row.querySelector(".iq");qty.addEventListener("input",calc);
+ row.querySelector(".close").addEventListener("click",()=>{row.remove();calc()});
+ closeModal();
+ calc();
 };
 
 window.addItem=()=>{
@@ -285,11 +328,7 @@ function selectInvoiceProduct(input,autoNext=true){
  row.querySelector(".iu").value=p.sell||0;
  calc();
  const rows=document.querySelectorAll("#items .item");
- if(autoNext && rows[rows.length-1]===row){
-   addItem();
-   const last=document.querySelector("#items .item:last-child .ipName");
-   if(last)last.focus();
- }
+
 }
 
 function calc(){
@@ -347,6 +386,7 @@ window.printInvoice=function(){
  },100);
 };
 
+window.closeInvoicePreview=function(){ closeModal(); render("sales",false); };
 window.showInvoice=async id=>{
 let i=data.invoices.find(x=>String(x.id)===String(id)); 
 if(!i)return alert("فاکتور پیدا نشد."); 
@@ -356,7 +396,7 @@ let rows=(r.data||[]).map((x,n)=>`<tr><td>${n+1}</td><td>${esc(x.product_name)}<
 let cardNo="";
 try{cardNo=localStorage.getItem("hesabyar_card_"+i.id)||""}catch(e){}
 openModal(`<div class="invoicePrint">
-<h2>فاکتور فروش</h2>
+<h2>فاکتور تحویل کالا</h2>
 <div class="invMeta"><span>شماره فاکتور: <b>#${i.no}</b></span><span>تاریخ: <b>${esc(i.date)}</b></span><span>مشتری: <b>${esc(i.customer)}</b></span></div>
 <div class="table"><table><thead><tr><th>ردیف</th><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div>
 <div class="sum">
@@ -369,7 +409,7 @@ openModal(`<div class="invoicePrint">
 <div class="cardNo">شماره کارت: <b>${esc(cardNo||"—")}</b></div>
 <div class="brand">حساب‌یار</div>
 </div>
-<div class="noPrint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="primary" onclick="printInvoice()">📄 ذخیره PDF / چاپ</button><button class="secondary" onclick="closeModal()">↩ بازگشت</button></div>`)
+<div class="noPrint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="primary" onclick="printInvoice()">📄 ذخیره PDF / چاپ</button><button class="secondary" type="button" onclick="closeInvoicePreview()">↩ بازگشت</button></div>`)
 };
 start();
 })();
