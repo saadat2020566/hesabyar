@@ -234,7 +234,56 @@ window.newInvoice=(preselect=null)=>{
  }
 };
 
+window._invoiceDraft=null;
+
+function captureInvoiceDraft(){
+ const rows=[...document.querySelectorAll("#items .item")].map(r=>({
+   name:r.querySelector(".ipName")?.value||"",
+   qty:r.querySelector(".iq")?.value||"",
+   unit:r.querySelector(".iu")?.value||"",
+   total:r.querySelector(".ix")?.value||"",
+   productId:r.dataset.productId||""
+ }));
+ return {
+   customer:document.getElementById("ic")?.value||"",
+   discount:document.getElementById("disc")?.value||"",
+   paid:document.getElementById("paid")?.value||"",
+   card:document.getElementById("cardNo")?.value||"",
+   rows
+ };
+}
+
+function restoreInvoiceDraft(draft){
+ if(!draft)return;
+ const ic=document.getElementById("ic"), disc=document.getElementById("disc"), paid=document.getElementById("paid"), card=document.getElementById("cardNo");
+ if(ic)ic.value=draft.customer||"";
+ if(disc)disc.value=draft.discount||"";
+ if(paid)paid.value=draft.paid||"";
+ if(card)card.value=draft.card||"";
+ const box=document.getElementById("items");
+ if(!box)return;
+ box.innerHTML="";
+ (draft.rows||[]).forEach(item=>{
+   box.insertAdjacentHTML("beforeend",`<div class="item" data-product-id="${esc(item.productId||"")}">
+     <input class="input ipName" list="productList" autocomplete="off" placeholder="نام محصول را بنویسید" value="${esc(item.name||"")}">
+     <input class="input iq" type="number" min="1" value="${esc(item.qty||"")}" placeholder="تعداد">
+     <input class="input iu" readonly value="${esc(item.unit||"")}" placeholder="قیمت واحد">
+     <input class="input ix" readonly value="${esc(item.total||"")}" placeholder="قیمت کل">
+     <button class="close" type="button" aria-label="حذف">×</button>
+   </div>`);
+   const row=box.lastElementChild;
+   const name=row.querySelector(".ipName"), qty=row.querySelector(".iq");
+   name.addEventListener("input",()=>searchInvoiceProduct(name));
+   name.addEventListener("change",()=>selectInvoiceProduct(name,true));
+   name.addEventListener("blur",()=>setTimeout(()=>selectInvoiceProduct(name,true),120));
+   qty.addEventListener("input",calc);
+   row.querySelector(".close").addEventListener("click",()=>{row.remove();calc()});
+ });
+ calc();
+}
+
 window.openAddItemPage=function(){
+ _invoiceDraft=captureInvoiceDraft();
  const productOpts=data.products.map(p=>`<option value="${esc(p.name)}"></option>`).join("");
  openModal(`<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" type="button">×</button></div>
  <datalist id="addProductList">${productOpts}</datalist>
@@ -244,7 +293,9 @@ window.openAddItemPage=function(){
   <div class="field"><label>قیمت واحد</label><input id="addUnit" class="input" type="number" min="0" placeholder="قیمت واحد"></div>
   <div class="field full"><label>قیمت کل</label><input id="addTotal" class="input" type="number" readonly placeholder="تعداد × قیمت واحد"></div>
  </div>
- <br><button class="primary fullBtn" type="button" onclick="registerAddedItem()">ثبت</button>`);
+ <br><div style="display:flex;gap:8px">
+ <button class="secondary" type="button" onclick="returnToInvoiceDraft()">بازگشت</button>
+ <button class="primary" type="button" onclick="registerAddedItem()">ثبت</button></div>`);
  const n=document.getElementById("addName"),q=document.getElementById("addQty"),u=document.getElementById("addUnit"),t=document.getElementById("addTotal");
  const calcAdd=()=>{t.value=(Number(q.value||0)*Number(u.value||0))||""};
  q.addEventListener("input",calcAdd);u.addEventListener("input",calcAdd);
@@ -253,6 +304,14 @@ window.openAddItemPage=function(){
    if(p){u.value=p.sell||0;calcAdd();}
  });
 };
+
+window.returnToInvoiceDraft=function(){
+ const d=window._invoiceDraft;
+ closeModal(true);
+ newInvoice();
+ setTimeout(()=>restoreInvoiceDraft(d),0);
+};
+
 window.registerAddedItem=function(){
  const n=(document.getElementById("addName")?.value||"").trim();
  const q=Number(document.getElementById("addQty")?.value||0);
@@ -260,22 +319,14 @@ window.registerAddedItem=function(){
  if(!n)return alert("نام محصول را وارد کنید.");
  if(q<=0)return alert("تعداد را وارد کنید.");
  if(u<0)return alert("قیمت واحد صحیح نیست.");
- const box=document.getElementById("items");
- if(!box)return;
+ const d=window._invoiceDraft||{customer:"",discount:"",paid:"",card:"",rows:[]};
+ d.rows=d.rows||[];
  const p=findProductByName(n);
- box.insertAdjacentHTML("beforeend",`<div class="item">
-   <input class="input ipName" list="productList" autocomplete="off" placeholder="نام محصول را بنویسید" value="${esc(n)}">
-   <input class="input iq" type="number" min="1" value="${q}">
-   <input class="input iu" readonly value="${u}">
-   <input class="input ix" readonly value="${q*u}">
-   <button class="close" type="button" aria-label="حذف">×</button>
- </div>`);
- const row=box.lastElementChild;
- if(p)row.dataset.productId=String(p.id);
- const qty=row.querySelector(".iq");qty.addEventListener("input",calc);
- row.querySelector(".close").addEventListener("click",()=>{row.remove();calc()});
- closeModal();
- calc();
+ d.rows.push({name:n,qty:String(q),unit:String(u),total:String(q*u),productId:p?String(p.id):""});
+ window._invoiceDraft=d;
+ closeModal(true);
+ newInvoice();
+ setTimeout(()=>restoreInvoiceDraft(d),0);
 };
 
 window.addItem=()=>{
