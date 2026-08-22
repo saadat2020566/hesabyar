@@ -142,7 +142,7 @@ async function loadData(){
  for(const r of [c,e])if(r.error)throw r.error;
  data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
  data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
- data.invoices=(i||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.invoices=(i||[]).map(x=>{let savedDate="";try{savedDate=localStorage.getItem("hesabyar_invoice_date_"+x.id)||""}catch(e){}return {id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",subtotal:+x.subtotal||0,discount:+x.discount||0,total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:savedDate||new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))};});
  data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
 }
 sb.auth.onAuthStateChange((event, session)=>{
@@ -209,8 +209,7 @@ document.getElementById("modal").addEventListener("click",function(e){
 document.addEventListener("keydown",function(e){if(e.key==="Escape" && modalOpen) closeModal();});
 
 window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button">×</button></div><div class="form">
-<div class="field"><label>شماره فاکتور</label><input id="invoiceNo" class="input" type="text" placeholder="شماره فاکتور"></div>
-<div class="field"><label>تاریخ</label><input id="invoiceDate" class="input" type="text" placeholder="تاریخ"></div><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
+<div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
 window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
 
 
@@ -223,6 +222,8 @@ window.newInvoice=(preselect=null)=>{
  let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
  let productOpts=data.products.map(p=>`<option value="${esc(p.name)}"></option>`).join("");
  openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button">×</button></div>
+ <div class="field"><label>شماره فاکتور</label><input id="invoiceNo" class="input" type="text" placeholder="شماره فاکتور"></div>
+ <div class="field"><label>تاریخ فاکتور</label><input id="invoiceDate" class="input" type="text" placeholder="مثلاً 1405/01/01" value="${today()}"></div>
  <div class="field"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
  <div class="sectionTitle"><div><h3>اقلام فاکتور</h3><span class="muted">برای اضافه کردن هر محصول روی «افزودن» بزنید.</span></div><button class="secondary" type="button" onclick="openAddItemPage()">➕ افزودن</button></div>
  <datalist id="productList">${productOpts}</datalist>
@@ -418,13 +419,19 @@ window.saveInvoice=async()=>{
    if(p&&q){used.push({p,q});sub+=p.sell*q}
  });
  if(!used.length)return alert("حداقل یک محصول انتخاب کنید.");
- let d=+disc.value||0,total=Math.max(0,sub-d),pay=Math.min(total,+paid.value||0),remaining=total-pay,cid=ic.value||null,c=cid?data.customers.find(x=>String(x.id)===cid):null,no=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
+ let d=+disc.value||0,total=Math.max(0,sub-d),pay=Math.min(total,+paid.value||0),remaining=total-pay,cid=ic.value||null,c=cid?data.customers.find(x=>String(x.id)===cid):null;
+ const invoiceNoInput=document.getElementById("invoiceNo");
+ const invoiceDateInput=document.getElementById("invoiceDate");
+ const enteredInvoiceNo=(invoiceNoInput?.value||"").trim();
+ const enteredInvoiceDate=(invoiceDateInput?.value||"").trim()||today();
+ const no=enteredInvoiceNo||String(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
  let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
  if(inv.error)return alert(inv.error.message);
  let ir=await sb.from("invoice_items").insert(used.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name,quantity:x.q,unit_price:x.p.sell,line_total:x.p.sell*x.q})));
  if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
  if(c){let r=await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);if(r.error)console.error(r.error)}
  if(c&&pay>0){let r=await sb.from("payments").insert({user_id:currentUser.id,customer_id:c.id,invoice_id:inv.data.id,amount:pay,note:"پرداخت هنگام صدور فاکتور"});if(r.error)console.error(r.error)}
+ try{localStorage.setItem("hesabyar_invoice_date_"+inv.data.id,enteredInvoiceDate)}catch(e){}
  await loadData();
  try{localStorage.setItem("hesabyar_card_"+inv.data.id,(document.getElementById("cardNo")?.value||"").trim())}catch(e){}
  closeModal();showInvoice(inv.data.id)
