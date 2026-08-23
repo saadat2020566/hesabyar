@@ -3,128 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت فاکتورها</title>
+    <title>سیستم فاکتور هوشمند</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f4f9; padding: 20px; direction: rtl; }
-        h2 { color: #333; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #f8f9fa; }
-        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.3s; }
-        .btn-new { background-color: #28a745; color: white; margin-bottom: 15px; }
-        .btn-show { background-color: #007bff; color: white; margin-left: 5px; }
-        .btn-del { background-color: #dc3545; color: white; }
-        .btn:hover { opacity: 0.8; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        /* حفظ تمام استایل‌های اصلی شما در اینجا قرار می‌گیرد */
+        :root {
+            --primary-color: #2d5a27; /* سبز تیره مطابق تم شما */
+            --accent-color: #4caf50;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            transition: 0.3s;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .btn-add {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .btn-add:hover {
+            background-color: var(--accent-color);
+        }
+
+        /* استایل جدید برای بخش فاکتورهای قبلی */
+        .history-section {
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .invoice-card {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .invoice-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .invoice-id {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .invoice-date {
+            font-size: 0.85em;
+            color: #777;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-view {
+            background-color: #3498db;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="main-content">
-        <!-- محتوا توسط جاوااسکریپت اینجا قرار می‌گیرد -->
+    <h2>ثبت فاکتور جدید</h2>
+    
+    <!-- فیلد‌های جدید شماره و تاریخ -->
+    <div class="row">
+        <div class="form-group" style="flex: 1;">
+            <label>شماره فاکتور</label>
+            <input type="text" id="invoiceNumber" placeholder="مثلاً: 1001">
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label>تاریخ</label>
+            <input type="text" id="invoiceDate" placeholder="مثلاً: 1402/05/23">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>نام مشتری</label>
+        <input type="text" id="customerName" placeholder="نام مشتری">
+    </div>
+
+    <hr>
+
+    <table id="itemsTable">
+        <thead>
+            <tr>
+                <th>نام کالا</th>
+                <th>تعداد</th>
+                <th>قیمت واحد</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody id="itemsBody">
+            <!-- ردیف‌های کالا اینجا اضافه می‌شوند -->
+        </tbody>
+    </table>
+    
+    <button class="btn-add" onclick="addItemRow()" style="background-color: #eee; color: #333; margin-top: 10px;">+ افزودن ردیف کالا</button>
+
+    <div style="margin-top: 20px; text-align: left; font-size: 1.2em; font-weight: bold;">
+        جمع کل: <span id="totalAmount">0</span> تومان
+    </div>
+
+    <button class="btn-add" onclick="saveInvoice()">ثبت و ذخیره فاکتور نهایی</button>
+
+    <!-- بخش فاکتورهای قبلی (درخواستی شما) -->
+    <div class="history-section">
+        <h3>فاکتورهای ثبت شده قبلی</h3>
+        <div id="invoiceList">
+            <!-- لیست فاکتورها توسط جاوااسکریپت اینجا ساخته می‌شود -->
+        </div>
     </div>
 </div>
 
 <script>
-    // مدیریت داده‌ها با استفاده از localStorage برای جلوگیری از از بین رفتن تغییرات
-    let data = JSON.parse(localStorage.getItem('my_invoices')) || { invoices: [] };
+    let items = [];
+    let savedInvoices = JSON.parse(localStorage.getItem('myInvoices')) || [];
 
-    function saveToStorage() {
-        localStorage.setItem('my_invoices', JSON.stringify(data));
+    // نمایش اولیه لیست فاکتورها
+    renderInvoiceList();
+
+    function addItemRow() {
+        const tbody = document.getElementById('itemsBody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text" class="item-name"></td>
+            <td><input type="number" class="item-qty" oninput="calculateTotal()"></td>
+            <td><input type="number" class="item-price" oninput="calculateTotal()"></td>
+            <td><button onclick="this.parentElement.parentElement.remove(); calculateTotal()" style="color:red; background:none; border:none;">✖</button></td>
+        `;
+        tbody.appendChild(row);
     }
 
-    // نمایش لیست فاکتورها
-    function renderInvoiceList() {
-        let html = `<h2>لیست فاکتورهای ثبت شده</h2>
-                    <button class="btn btn-new" onclick="showNewInvoiceForm()">+ فاکتور جدید</button>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>شماره فاکتور</th>
-                                <th>تاریخ</th>
-                                <th>مشتری</th>
-                                <th>عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-        if (data.invoices.length === 0) {
-            html += `<tr><td colspan="4">هیچ فاکتوری یافت نشد.</td></tr>`;
-        } else {
-            data.invoices.forEach((inv, index) => {
-                html += `<tr>
-                            <td>${inv.no}</td>
-                            <td>${inv.date}</td>
-                            <td>${inv.customer}</td>
-                            <td>
-                                <button class="btn btn-show" onclick="viewInvoice(${index})">نمایش</button>
-                                <button class="btn btn-del" onclick="deleteInvoice(${index})">حذف</button>
-                            </td>
-                         </tr>`;
-            });
-        }
-
-        html += `</tbody></table>`;
-        document.getElementById('main-content').innerHTML = html;
+    function calculateTotal() {
+        let total = 0;
+        const rows = document.querySelectorAll('#itemsBody tr');
+        rows.forEach(row => {
+            const qty = row.querySelector('.item-qty').value || 0;
+            const price = row.querySelector('.item-price').value || 0;
+            total += (qty * price);
+        });
+        document.getElementById('totalAmount').innerText = total.toLocaleString();
+        return total;
     }
 
-    // نمایش فرم ساخت فاکتور جدید
-    function showNewInvoiceForm() {
-        let html = `<h2>ایجاد فاکتور جدید</h2>
-                    <div class="form-group">
-                        <label>شماره فاکتور:</label>
-                        <input type="text" id="invNo" placeholder="مثلاً: ۱۲۳۴۵">
-                    </div>
-                    <div class="form-group">
-                        <label>تاریخ:</label>
-                        <input type="text" id="invDate" placeholder="مثلاً: ۱۴۰۲/۰۵/۲۰">
-                    </div>
-                    <div class="form-group">
-                        <label>نام مشتری:</label>
-                        <input type="text" id="invCust" placeholder="نام مشتری">
-                    </div>
-                    <button class="btn btn-new" onclick="saveNewInvoice()">ذخیره فاکتور</button>
-                    <button class="btn" onclick="renderInvoiceList()">انصراف</button>`;
-        document.getElementById('main-content').innerHTML = html;
-    }
+    function saveInvoice() {
+        const invNum = document.getElementById('invoiceNumber').value;
+        const invDate = document.getElementById('invoiceDate').value;
+        const custName = document.getElementById('customerName').value;
+        const total = calculateTotal();
 
-    // ذخیره فاکتور جدید
-    function saveNewInvoice() {
-        const no = document.getElementById('invNo').value;
-        const date = document.getElementById('invDate').value;
-        const customer = document.getElementById('invCust').value;
-
-        if (!no || !date || !customer) {
-            alert("لطفاً تمام فیلدها را پر کنید.");
+        if (!invNum || !custName) {
+            alert("لطفاً شماره فاکتور و نام مشتری را وارد کنید");
             return;
         }
 
-        data.invoices.push({ no, date, customer });
-        saveToStorage();
-        renderInvoiceList();
+        // جمع‌آوری اطلاعات کالاها
+        const invoiceItems = [];
+        document.querySelectorAll('#itemsBody tr').forEach(row => {
+            invoiceItems.push({
+                name: row.querySelector('.item-name').value,
+                qty: row.querySelector('.item-qty').value,
+                price: row.querySelector('.item-price').value
+            });
+        });
+
+        const newInvoice = {
+            id: invNum,
+            date: invDate,
+            customer: custName,
+            total: total,
+            items: invoiceItems
+        };
+
+        // ذخیره در آرایه و LocalStorage
+        savedInvoices.push(newInvoice);
+        localStorage.setItem('myInvoices', JSON.stringify(savedInvoices));
+
+        // ریست کردن فرم
+        alert("فاکتور با موفقیت ذخیره شد!");
+        location.reload(); 
     }
 
-    // حذف فاکتور
+    function renderInvoiceList() {
+        const listDiv = document.getElementById('invoiceList');
+        listDiv.innerHTML = '';
+
+        if (savedInvoices.length === 0) {
+            listDiv.innerHTML = '<p style="color:#999; text-align:center;">هنوز فاکتوری ثبت نشده است.</p>';
+            return;
+        }
+
+        savedInvoices.forEach((inv, index) => {
+            const card = document.createElement('div');
+            card.className = 'invoice-card';
+            card.innerHTML = `
+                <div class="invoice-info">
+                    <span class="invoice-id">فاکتور: ${inv.id}</span>
+                    <span class="invoice-date">${inv.date} | مشتری: ${inv.customer}</span>
+                    <span style="font-size:0.9em; color:var(--primary-color)">مبلغ: ${inv.total.toLocaleString()} تومان</span>
+                </div>
+                <div class="actions">
+                    <button class="btn-view" onclick="viewInvoice(${index})">مشاهده</button>
+                    <button class="btn-delete" onclick="deleteInvoice(${index})">حذف</button>
+                </div>
+            `;
+            listDiv.appendChild(card);
+        });
+    }
+
     function deleteInvoice(index) {
         if (confirm("آیا از حذف این فاکتور اطمینان دارید؟")) {
-            data.invoices.splice(index, 1);
-            saveToStorage();
+            savedInvoices.splice(index, 1);
+            localStorage.setItem('myInvoices', JSON.stringify(savedInvoices));
             renderInvoiceList();
         }
     }
 
-    // نمایش جزئیات فاکتور (به صورت ساده)
     function viewInvoice(index) {
-        const inv = data.invoices[index];
-        alert(`جزئیات فاکتور:\n------------------\nشماره: ${inv.no}\nتاریخ: ${inv.date}\nمشتری: ${inv.customer}`);
+        const inv = savedInvoices[index];
+        let itemsText = inv.items.map(i => `- ${i.name}: ${i.qty} عدد x ${i.price}`).join('\n');
+        alert(`جزئیات فاکتور شماره ${inv.id}\nمشتری: ${inv.customer}\nتاریخ: ${inv.date}\n\nلیست کالاها:\n${itemsText}\n\nجمع کل: ${inv.total.toLocaleString()} تومان`);
     }
-
-    // اجرای اولیه برنامه
-    renderInvoiceList();
 </script>
 
 </body>
