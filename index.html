@@ -386,25 +386,6 @@ openModal(`<div class="invoicePrint">
 };
 start();
 })();
-<script>
-window.showPreviousInvoiceExact=function(id){
- const a=window.data?.invoices||[], inv=a.find(x=>String(x.id)===String(id));
- if(!inv){alert("فاکتور پیدا نشد.");return;}
- if(typeof window.previewInvoice==="function") return window.previewInvoice(inv);
- if(typeof window.showInvoice==="function") return window.showInvoice(inv);
- alert("نمایش فاکتور در این نسخه پیدا نشد.");
-};
-window.deletePreviousInvoiceExact=function(id){
- const a=window.data?.invoices||[], i=a.findIndex(x=>String(x.id)===String(id));
- if(i<0){alert("فاکتور پیدا نشد.");return;}
- if(!confirm("آیا این فاکتور حذف شود؟"))return;
- a.splice(i,1);
- if(typeof window.saveData==="function") window.saveData();
- else if(typeof window.persist==="function") window.persist();
- if(typeof window.render==="function") window.render("history");
- else if(typeof window.renderInvoices==="function") window.renderInvoices();
- else location.reload();
-};
-</script></script>
+</script>
 </body>
 </html>
