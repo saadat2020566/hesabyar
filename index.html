@@ -166,10 +166,10 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button> <button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
  <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
- <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5), false)}</div>`;
+ <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
 
-function invoiceTable(a, isHome=false){
+function invoiceTable(a){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
  return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -394,7 +394,6 @@ openModal(`
 
   <div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px dashed #ccc;padding-top:10px;">
     <div><b>فروشنده:</b> مهدی سعادت‌پور</div>
-    <div><b>شماره شبا:</b> IR09 0120 0200 0000 8797 (207521)</div>
   </div>
 </div>
 
@@ -412,7 +411,7 @@ if(!confirm("آیا از حذف این فاکتور اطمینان دارید؟"
 let r=await sb.from("invoices").delete().eq("id",id).eq("user_id",currentUser.id);
 if(r.error)return alert(r.error.message);
 await loadData();
-render("sales");
+render(document.querySelector(".side button.active")?.getAttribute("data-page")||"home");
 };
 
 window.downloadPDF=no=>{
