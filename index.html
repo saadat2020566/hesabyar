@@ -193,15 +193,17 @@ function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML
 
 function openModal(h){document.getElementById("box").innerHTML=h;document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
+window.closeModal = closeModal;
+
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
 
-window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
+window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
 window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
 
-window.newProduct=()=>openModal(`<div class="modalHead"><h2>محصول جدید</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="pn" class="input"></div><div class="field"><label>واحد</label><input id="pu" class="input" value="عدد"></div><div class="field"><label>قیمت خرید</label><input id="pb" class="input" type="number" value="0"></div><div class="field"><label>قیمت فروش</label><input id="ps" class="input" type="number" value="0"></div><div class="field"><label>موجودی</label><input id="pst" class="input" type="number" value="0"></div><div class="field"><label>حداقل موجودی</label><input id="pmin" class="input" type="number" value="0"></div></div><br><button class="primary" onclick="saveProduct()">ثبت</button>`);
+window.newProduct=()=>openModal(`<div class="modalHead"><h2>محصول جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="pn" class="input"></div><div class="field"><label>واحد</label><input id="pu" class="input" value="عدد"></div><div class="field"><label>قیمت خرید</label><input id="pb" class="input" type="number" value="0"></div><div class="field"><label>قیمت فروش</label><input id="ps" class="input" type="number" value="0"></div><div class="field"><label>موجودی</label><input id="pst" class="input" type="number" value="0"></div><div class="field"><label>حداقل موجودی</label><input id="pmin" class="input" type="number" value="0"></div></div><br><button class="primary" onclick="saveProduct()">ثبت</button>`);
 window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("نام محصول را وارد کنید");let r=await sb.from("products").insert({user_id:currentUser.id,name,unit:pu.value||"عدد",buy_price:+pb.value||0,sell_price:+ps.value||0,stock:+pst.value||0,min_stock:+pmin.value||0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("products")};
 
-window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
+window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
 window.saveExpense=async()=>{let title=en.value.trim(),amount=+ea.value||0;if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()});if(r.error)return alert(r.error.message);await loadData();closeModal();render("finance")};
 
 window.newInvoice=()=>{
@@ -210,7 +212,7 @@ let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`
 let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 
-openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" onclick="closeModal()">×</button></div>
+openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
 <div class="form">
   <div class="field"><label>شماره فاکتور</label><input id="invNo" class="input" type="number" value="${defaultNo}"></div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
@@ -225,7 +227,7 @@ updateInvoiceTotals();
 window.openAddItemModal=()=>{
 let opts=data.products.map(p=>`<option value="${p.id}" data-price="${p.sell}">${esc(p.name)} (${money(p.sell)})</option>`).join("");
 document.getElementById("subBox").innerHTML=`
-<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" onclick="closeSubModal()">×</button></div>
+<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" type="button" onclick="closeSubModal()">×</button></div>
 <div class="field full"><label>نوع کالا</label><input id="subProdName" class="input"></div>
 <div class="field full"><label>مدل کالا</label><input id="subProdModel" class="input"></div>
 ${opts?`<div class="field full"><label>انتخاب از محصولات ثبت شده</label><select id="subProd" class="input" onchange="onSubProdChange()"><option value="">-- انتخاب کنید --</option>${opts}</select></div>`:""}
@@ -239,6 +241,9 @@ document.getElementById("subModal").classList.add("open");
 window.closeSubModal=()=>{
 document.getElementById("subModal").classList.remove("open");
 };
+window.closeSubModal = closeSubModal;
+
+document.getElementById("subModal").onclick=e=>{if(e.target.id==="subModal")closeSubModal()};
 
 window.onSubProdChange=()=>{
 let sel=document.getElementById("subProd");
@@ -293,7 +298,7 @@ tbody.innerHTML=currentInvoiceItems.map((item, idx)=>`
   <td>${item.q}</td>
   <td>${money(item.unit)}</td>
   <td>${money(item.total)}</td>
-  <td><button class="close" style="width:26px;height:26px;font-size:12px" onclick="removeInvoiceItem(${idx})">×</button></td>
+  <td><button class="close" type="button" style="width:26px;height:26px;font-size:12px" onclick="removeInvoiceItem(${idx})">×</button></td>
 </tr>`).join("");
 updateInvoiceTotals();
 };
@@ -400,7 +405,7 @@ openModal(`
       <span>پرداختی:</span>
       <span>${money(i.paid)}</span>
     </div>
-    <div style="data;display:flex;justify-content:space-between;font-size:12px;color:#555">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
       <span>مانده حساب:</span>
       <span>${money(i.remaining)}</span>
     </div>
@@ -411,7 +416,7 @@ openModal(`
 <div style="display:flex;gap:10px">
   <button class="primary" onclick="downloadPDF(${i.no})">📥 دانلود PDF</button>
   <button class="secondary" onclick="window.print()">🖨 چاپ</button>
-  <button class="close" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
+  <button class="close" type="button" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
 </div>
 `);
 };
