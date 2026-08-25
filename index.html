@@ -85,8 +85,11 @@ let currentInvoiceItems=[];
 const money=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
 const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+
 const nav=p=>{
-  document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.getAttribute("data-page")===p));
+  document.querySelectorAll("[data-page]").forEach(b=>{
+    b.classList.toggle("active", b.getAttribute("data-page")===p);
+  });
 };
 const metric=(a,b,c)=>`<div class="card"><div class="label">${a}</div><div class="num">${b}</div><div class="muted">${c}</div></div>`;
 
@@ -151,8 +154,15 @@ async function start(){
  }
 }
 
-document.querySelectorAll("[data-page]").forEach(b=>{
- b.onclick=()=>render(b.getAttribute("data-page"));
+// اتصال رویداد کلیک برای تمام دکمه‌های ناوبری (سایدبار و منوی پایین)
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-page]");
+  if(btn){
+    const pageName = btn.getAttribute("data-page");
+    if(pageName){
+      render(pageName);
+    }
+  }
 });
 
 function render(p){
@@ -171,7 +181,8 @@ function home(){
 
 function invoiceTable(a){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
+ // مشکل برطرف شده: آیدی فاکتور در داخل کوتیشن قرار گرفت ('${i.id}') تا در صورت هش بودن به عنوان یک متن به تابع ارسال شود
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
@@ -331,7 +342,9 @@ await loadData();closeModal();showInvoice(inv.data.id);
 };
 
 window.showInvoice=async id=>{
-let i=data.invoices.find(x=>String(x.id)===String(id)),r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
+let i=data.invoices.find(x=>String(x.id)===String(id));
+if(!i) return alert("خطا! فاکتور یافت نشد.");
+let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
 if(r.error)return alert(r.error.message);
 
 let rows=(r.data||[]).map((x, idx)=>{
@@ -390,10 +403,6 @@ openModal(`
       <span>مانده حساب:</span>
       <span>${money(i.remaining)}</span>
     </div>
-  </div>
-
-  <div style="display:flex;justify-content:space-between;font-size:12px;border-top:1px dashed #ccc;padding-top:10px;">
-    <div><b>فروشنده:</b> مهدی سعادت‌پور</div>
   </div>
 </div>
 
