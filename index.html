@@ -154,7 +154,6 @@ async function start(){
  }
 }
 
-// اتصال رویداد کلیک برای تمام دکمه‌های ناوبری (سایدبار و منوی پایین)
 document.addEventListener("click", e => {
   const btn = e.target.closest("[data-page]");
   if(btn){
@@ -181,7 +180,6 @@ function home(){
 
 function invoiceTable(a){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- // مشکل برطرف شده: آیدی فاکتور در داخل کوتیشن قرار گرفت ('${i.id}') تا در صورت هش بودن به عنوان یک متن به تابع ارسال شود
  return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 
@@ -220,16 +218,16 @@ openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="c
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
-<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
-disc.oninput=updateInvoiceTotals;paid.oninput=updateInvoiceTotals;
+<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
+updateInvoiceTotals();
 };
 
 window.openAddItemModal=()=>{
 let opts=data.products.map(p=>`<option value="${p.id}" data-price="${p.sell}">${esc(p.name)} (${money(p.sell)})</option>`).join("");
 document.getElementById("subBox").innerHTML=`
 <div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" onclick="closeSubModal()">×</button></div>
-<div class="field full"><label>نوع کالا (مثلا: مبل سه نفره)</label><input id="subProdName" class="input" placeholder="نوع کالا"></div>
-<div class="field full"><label>مدل کالا (مثلا: توکیو)</label><input id="subProdModel" class="input" placeholder="مدل کالا"></div>
+<div class="field full"><label>نوع کالا</label><input id="subProdName" class="input"></div>
+<div class="field full"><label>مدل کالا</label><input id="subProdModel" class="input"></div>
 ${opts?`<div class="field full"><label>انتخاب از محصولات ثبت شده</label><select id="subProd" class="input" onchange="onSubProdChange()"><option value="">-- انتخاب کنید --</option>${opts}</select></div>`:""}
 <div class="field full"><label>تعداد</label><input id="subQty" class="input" type="number" min="1" value="1" oninput="onSubCalc()"></div>
 <div class="field full"><label>قیمت واحد</label><input id="subUnit" class="input" type="number" oninput="onSubCalc()"></div>
@@ -311,6 +309,7 @@ if(document.getElementById("sub")) document.getElementById("sub").textContent=mo
 if(document.getElementById("total")) document.getElementById("total").textContent=money(total);
 if(document.getElementById("remain")) document.getElementById("remain").textContent=money(remain);
 }
+window.updateInvoiceTotals = updateInvoiceTotals;
 
 window.saveInvoice=async()=>{
 if(!currentInvoiceItems.length){alert("حداقل یک محصول اضافه کنید");return;}
