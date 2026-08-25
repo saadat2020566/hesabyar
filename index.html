@@ -218,7 +218,7 @@ openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="c
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
-<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>تخفیف</span><input id="disc" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
+<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>درصد تخفیف (%)</span><input id="disc" class="input" type="number" value="0" min="0" max="100" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
 updateInvoiceTotals();
 };
 
@@ -300,8 +300,9 @@ updateInvoiceTotals();
 
 function updateInvoiceTotals(){
 let sub=currentInvoiceItems.reduce((a,b)=>a+b.total,0);
-let d=+document.getElementById("disc")?.value||0;
-let total=Math.max(0, sub-d);
+let discPercent=+document.getElementById("disc")?.value||0;
+let discountAmount = sub * (discPercent / 100);
+let total=Math.max(0, sub - discountAmount);
 let p=+document.getElementById("paid")?.value||0;
 let remain=Math.max(0, total-p);
 
@@ -315,15 +316,16 @@ window.saveInvoice=async()=>{
 if(!currentInvoiceItems.length){alert("حداقل یک محصول اضافه کنید");return;}
 
 let sub=currentInvoiceItems.reduce((a,b)=>a+b.total,0);
-let d=+document.getElementById("disc").value||0;
-let total=Math.max(0,sub-d);
+let discPercent=+document.getElementById("disc").value||0;
+let discountAmount = sub * (discPercent / 100);
+let total=Math.max(0, sub - discountAmount);
 let pay=Math.min(total,+document.getElementById("paid").value||0);
 let remaining=total-pay;
 let cid=document.getElementById("ic").value||null;
 let c=cid?data.customers.find(x=>String(x.id)===cid):null;
 let no=+document.getElementById("invNo").value||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
 
-let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
+let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:discountAmount,total,paid:pay,remaining}).select().single();
 if(inv.error)return alert(inv.error.message);
 
 let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
@@ -398,7 +400,7 @@ openModal(`
       <span>پرداختی:</span>
       <span>${money(i.paid)}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+    <div style="data;display:flex;justify-content:space-between;font-size:12px;color:#555">
       <span>مانده حساب:</span>
       <span>${money(i.remaining)}</span>
     </div>
