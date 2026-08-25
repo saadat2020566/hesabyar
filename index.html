@@ -18,7 +18,10 @@ button{cursor:pointer}
 .side button.active,.side button:hover{background:#e8f3f0;color:#176b5b;font-weight:bold}
 main{flex:1;padding:22px;min-width:0}
 .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.head h1{margin:0;font-size:23px}.muted{color:#78837f;font-size:12px;margin-top:6px}
-.primary,.secondary{border:0;border-radius:11px;padding:11px 15px;font-weight:bold}.primary{background:#176b5b;color:#fff}.secondary{background:#e9f2ef;color:#176b5b}
+.primary,.secondary,.danger{border:0;border-radius:11px;padding:11px 15px;font-weight:bold}
+.primary{background:#176b5b;color:#fff}
+.secondary{background:#e9f2ef;color:#176b5b}
+.danger{background:#fde8e8;color:#c53030}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid #e4ebe8;border-radius:16px;padding:16px}.label{font-size:12px;color:#78837f}.num{font-size:19px;font-weight:bold;margin-top:8px}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
 .section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}
@@ -163,10 +166,14 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button> <button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
  <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
- <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
+ <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5), true)}</div>`;
 }
 
-function invoiceTable(a){if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th></tr></thead><tbody>${a.map(i=>`<tr onclick="showInvoice(${i.id})" style="cursor:pointer"><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td></tr>`).join("")}</tbody></table></div>`}
+function invoiceTable(a, isHome=false){
+ if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th>${!isHome?'<th>عملیات</th>':''}</tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td>${!isHome?`<td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td>`:''}</tr>`).join("")}</tbody></table></div>`;
+}
+
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
 function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
 function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td></tr>`).join("")}
@@ -209,14 +216,18 @@ disc.oninput=updateInvoiceTotals;paid.oninput=updateInvoiceTotals;
 window.openAddItemModal=()=>{
 let opts=data.products.map(p=>`<option value="${p.id}" data-price="${p.sell}">${esc(p.name)} (${money(p.sell)})</option>`).join("");
 document.getElementById("subBox").innerHTML=`
-<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" onclick="document.getElementById('subModal').classList.remove('open')">×</button></div>
-<div class="field full"><label>نام محصول (انتخاب از لیست یا ورود دستی)</label><input id="subProdName" class="input" placeholder="نام محصول" oninput="onCustomNameInput()"></div>
+<div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" onclick="closeSubModal()">×</button></div>
+<div class="field full"><label>نام محصول (انتخاب از لیست یا ورود دستی)</label><input id="subProdName" class="input" placeholder="نام محصول"></div>
 ${opts?`<div class="field full"><label>یا انتخاب از محصولات ثبت شده</label><select id="subProd" class="input" onchange="onSubProdChange()"><option value="">-- انتخاب کنید --</option>${opts}</select></div>`:""}
 <div class="field full"><label>تعداد</label><input id="subQty" class="input" type="number" min="1" value="1" oninput="onSubCalc()"></div>
 <div class="field full"><label>قیمت واحد</label><input id="subUnit" class="input" type="number" oninput="onSubCalc()"></div>
 <div class="field full"><label>قیمت کل</label><input id="subTotal" class="input" type="number" readonly style="background:#f4f7f6;font-weight:bold;color:#176b5b"></div>
 <br><button class="primary fullBtn" style="width:100%" onclick="confirmAddItem()">ثبت</button>`;
 document.getElementById("subModal").classList.add("open");
+};
+
+window.closeSubModal=()=>{
+document.getElementById("subModal").classList.remove("open");
 };
 
 window.onSubProdChange=()=>{
@@ -229,8 +240,6 @@ if(opt && opt.value){
   onSubCalc();
 }
 };
-
-window.onCustomNameInput=()=>{};
 
 window.onSubCalc=()=>{
 let q=+document.getElementById("subQty").value||0;
@@ -245,15 +254,12 @@ let u=+document.getElementById("subUnit").value||0;
 let t=q*u;
 if(!name||q<=0){alert("نام محصول و تعداد را وارد کنید");return;}
 
-// پیدا کردن محصول در دیتابیس یا ساخت مورد جدید دستی
 let p=data.products.find(x=>x.name===name);
-if(!p){
-  p={id: null, name: name, stock: 999999};
-}
+if(!p){p={id: null, name: name, stock: 999999};}
 
 if(p.id && q>p.stock){alert("موجودی کافی نیست! موجودی انبار: "+p.stock);return;}
 currentInvoiceItems.push({p, q, unit:u, total:t});
-document.getElementById("subModal").classList.remove("open");
+closeSubModal();
 renderInvoiceItems();
 };
 
@@ -303,9 +309,8 @@ let remaining=total-pay;
 let cid=document.getElementById("ic").value||null;
 let c=cid?data.customers.find(x=>String(x.id)===cid):null;
 let no=+document.getElementById("invNo").value||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
-let dateStr=document.getElementById("invDate").value.trim()||new Intl.DateTimeFormat("fa-IR").format(new Date());
 
-let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining,invoice_date:dateStr}).select().single();
+let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:d,total,paid:pay,remaining}).select().single();
 if(inv.error)return alert(inv.error.message);
 
 let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name,quantity:x.q,unit_price:x.unit,line_total:x.total})));
@@ -327,6 +332,14 @@ let i=data.invoices.find(x=>String(x.id)===String(id)),r=await sb.from("invoice_
 if(r.error)return alert(r.error.message);
 let rows=(r.data||[]).map(x=>`<tr><td>${esc(x.product_name)}</td><td>${x.quantity}</td><td>${money(x.unit_price)}</td><td>${money(x.line_total)}</td></tr>`).join("");
 openModal(`<div id="printableInvoice"><div class="modalHead"><h2>فاکتور #${i.no}</h2><button class="close" onclick="closeModal()">×</button></div><p>مشتری: <b>${esc(i.customer)}</b><br>تاریخ: <b>${i.date}</b></p><div class="table"><table><thead><tr><th>محصول</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th></tr></thead><tbody>${rows}</tbody></table></div><div class="totals"><div class="tr final"><span>مبلغ نهایی</span><b>${money(i.total)}</b></div><div class="tr"><span>پرداخت</span><b>${money(i.paid)}</b></div><div class="tr"><span>مانده</span><b>${money(i.remaining)}</b></div></div></div><br><div style="display:flex;gap:10px"><button class="primary" onclick="downloadPDF(${i.no})">📥 دانلود PDF</button><button class="secondary" onclick="window.print()">🖨 چاپ</button></div>`)
+};
+
+window.deleteInvoice=async id=>{
+if(!confirm("آیا از حذف این فاکتور اطمینان دارید؟"))return;
+let r=await sb.from("invoices").delete().eq("id",id).eq("user_id",currentUser.id);
+if(r.error)return alert(r.error.message);
+await loadData();
+render("sales");
 };
 
 window.downloadPDF=no=>{
