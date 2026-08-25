@@ -166,12 +166,12 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button> <button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
  <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="newExpense()">💰 ثبت هزینه</button></div>
- <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5), true)}</div>`;
+ <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5), false)}</div>`;
 }
 
 function invoiceTable(a, isHome=false){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th>${!isHome?'<th>عملیات</th>':''}</tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td>${!isHome?`<td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td>`:''}</tr>`).join("")}</tbody></table></div>`;
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
