@@ -22,6 +22,13 @@ main{flex:1;padding:22px;min-width:0}
 .primary{background:#176b5b;color:#fff}
 .secondary{background:#e9f2ef;color:#176b5b}
 .danger{background:#fde8e8;color:#c53030}
+
+/* استایل جدید و هم‌تم برای دکمه‌های جدول */
+.btn-action-view{background:#e8f3f0;color:#176b5b;border:0;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:bold;transition:all .2s}
+.btn-action-view:hover{background:#d5e8e3}
+.btn-action-del{background:#fde8e8;color:#c53030;border:0;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:bold;transition:all .2s}
+.btn-action-del:hover{background:#fbd3d3}
+
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid #e4ebe8;border-radius:16px;padding:16px}.label{font-size:12px;color:#78837f}.num{font-size:19px;font-weight:bold;margin-top:8px}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
 .section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}
@@ -29,12 +36,15 @@ main{flex:1;padding:22px;min-width:0}
 table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #edf1ef;text-align:right;font-size:12px;white-space:nowrap}th{color:#74807c;background:#fafcfc}
 .badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#e8f3f0;color:#176b5b}.warn{background:#fff1d8;color:#a76a00}
 .search{margin-bottom:10px}.input{width:100%;padding:10px 11px;border:1px solid #d8e2de;border-radius:10px;background:#fff;outline:none}.input:focus{border-color:#176b5b}
-.modal{position:fixed;inset:0;background:#10231e99;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.open{display:flex}.box{background:#fff;width:min(650px,100%);max-height:92vh;overflow:auto;border-radius:24px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.12)}.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.close{border:0;background:#eef2f0;border-radius:12px;width:36px;height:36px;font-size:18px;display:grid;place-items:center}
+.modal{position:fixed;inset:0;background:#10231e99;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.open{display:flex}.box{background:#fff;width:min(650px,100%);max-height:92vh;overflow:auto;border-radius:24px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.12)}.modalHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.close{border:0;background:#eef2f0;border-radius:12px;width:36px;height:36px;font-size:18px;display:grid;place-items:center;cursor:pointer}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:10px}.field label{display:block;font-size:12px;color:#697570;margin-bottom:6px}.full{grid-column:1/-1}
 .totals{background:#f5f9f7;padding:12px;border-radius:12px;margin-top:12px}.tr{display:flex;justify-content:space-between;align-items:center;margin:7px 0}.final{font-size:17px;font-weight:bold;color:#176b5b;border-top:1px solid #dfe9e5;padding-top:9px}
 .mobile{display:none}
 @media(max-width:800px){
-.side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}}
+.side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}
+.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:11px}
+.mobile button.active{color:#176b5b;font-weight:bold}
+.form{grid-template-columns:1fr}.full{grid-column:auto}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -65,7 +75,6 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <nav class="mobile">
 <button data-page="home" class="active">🏠<br>خانه</button>
 <button data-page="sales">🧾<br>فاکتور</button>
-<button onclick="newInvoice()" style="font-size:22px;color:#176b5b">＋</button>
 <button data-page="customers">👥<br>مشتری</button>
 <button data-page="products">📦<br>کالا</button>
 </nav>
@@ -155,6 +164,13 @@ document.querySelectorAll("[data-page]").forEach(b=>{
  b.onclick=()=>render(b.getAttribute("data-page"));
 });
 
+document.querySelectorAll(".mobile button").forEach(b=>{
+ b.onclick=()=> {
+   let p = b.getAttribute("data-page");
+   if(p) render(p);
+ };
+});
+
 function render(p){
  if(!currentUser)return authScreen();
  nav(p);
@@ -171,7 +187,7 @@ function home(){
 
 function invoiceTable(a, isHome=false){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th>${!isHome?'<th>عملیات</th>':''}</tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td>${!isHome?`<td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice(${i.id})">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td>`:''}</tr>`).join("")}</tbody></table></div>`;
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th>${!isHome?'<th>عملیات</th>':''}</tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td>${!isHome?`<td><button class="btn-action-view" onclick="showInvoice(${i.id})">👁️ نمایش</button> <button class="btn-action-del" onclick="deleteInvoice(${i.id})">🗑️ حذف</button></td>`:''}</tr>`).join("")}</tbody></table></div>`;
 }
 
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
@@ -230,6 +246,8 @@ document.getElementById("subModal").classList.add("open");
 window.closeSubModal=()=>{
 document.getElementById("subModal").classList.remove("open");
 };
+
+document.getElementById("subModal").onclick=e=>{if(e.target.id==="subModal")closeSubModal()};
 
 window.onSubProdChange=()=>{
 let sel=document.getElementById("subProd");
@@ -349,6 +367,9 @@ let rows=(r.data||[]).map((x, idx)=>{
 }).join("");
 
 openModal(`
+<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+  <button class="close" onclick="closeModal()">×</button>
+</div>
 <div id="printableInvoice" style="background:#fff;padding:15px;font-family:Tahoma,sans-serif;color:#000;">
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #333;padding-bottom:10px;margin-bottom:15px;">
     <div>
@@ -402,7 +423,7 @@ openModal(`
 <div style="display:flex;gap:10px">
   <button class="primary" onclick="downloadPDF(${i.no})">📥 دانلود PDF</button>
   <button class="secondary" onclick="window.print()">🖨 چاپ</button>
-  <button class="close" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
+  <button class="secondary" onclick="closeModal()" style="margin-right:auto;">بستن</button>
 </div>
 `);
 };
