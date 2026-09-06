@@ -1,0 +1,14 @@
+{
+  "name": "حساب‌یار",
+  "short_name": "حساب‌یار",
+  "description": "برنامه حسابداری و مدیریت فروش حساب‌یار",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "dir": "rtl",
+  "lang": "fa-IR",
+  "id": "/"
+}
