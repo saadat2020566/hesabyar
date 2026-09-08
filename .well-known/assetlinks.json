@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.hesabyar.app",
+        "sha256_cert_fingerprints": ["54:40:14:A5:D3:EC:C1:75:70:6B:E6:B8:A0:90:E5:C6:25:4A:47:DD:19:1A:05:A5:87:DD:97:52:D0:9A:5A:59"]
+      }
+    }]
