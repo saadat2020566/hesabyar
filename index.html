@@ -648,9 +648,26 @@ render(document.querySelector(".side button.active")?.getAttribute("data-page")|
 };
 
 window.downloadPDF=no=>{
-let element=document.getElementById("printableInvoice");
-let opt={margin:10,filename:`invoice-${no}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
-html2pdf().from(element).set(opt).save();
+  let element=document.getElementById("printableInvoice");
+  let logoText=document.getElementById("invoiceLogoText");
+
+  if(logoText) logoText.style.display="none";
+
+  let opt={
+    margin:10,
+    filename:`invoice-${no}.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+  };
+
+  html2pdf()
+    .from(element)
+    .set(opt)
+    .save()
+    .then(()=>{
+      if(logoText) logoText.style.display="block";
+    });
 };
 
 start();
