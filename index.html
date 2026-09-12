@@ -418,15 +418,142 @@ let rows=(r.data||[]).map((x, idx)=>{
 
 openModal(`
 <div id="printableInvoice" style="background:#fff;padding:15px;font-family:Tahoma,sans-serif;color:#000;">
-  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #333;padding-bottom:10px;margin-bottom:15px;">
-    <div>
-      <h2 style="margin:0;font-size:18px;">فاکتور تحویل کالا</h2>
-      <div style="font-size:12px;margin-top:4px;color:#555">تاریخ: ${i.date}</div>
+  <!-- سربرگ فاکتور -->
+<div class="invoiceHeader" style="
+  border-bottom:2px solid #176b5b;
+  padding:10px 5px 18px;
+  margin-bottom:15px;
+  position:relative;
+  direction:rtl;
+">
+
+  <!-- لوگو -->
+  <div style="
+    position:absolute;
+    left:0;
+    top:0;
+    width:85px;
+    text-align:center;
+  ">
+    <label for="invoiceLogoInput" style="
+      display:block;
+      width:80px;
+      height:80px;
+      border:2px dashed #9ccfc4;
+      border-radius:12px;
+      background:#f1f8f6;
+      cursor:pointer;
+      padding:5px;
+    ">
+      <img id="invoiceLogoPreview"
+           src=""
+           style="
+             width:100%;
+             height:100%;
+             object-fit:contain;
+             border-radius:8px;
+             display:none;
+           ">
+
+      <div id="invoiceLogoText" style="
+        color:#176b5b;
+        font-size:13px;
+        font-weight:bold;
+        padding-top:18px;
+      ">
+        🖼️<br>انتخاب لوگو
+      </div>
+    </label>
+
+    <input id="invoiceLogoInput"
+           type="file"
+           accept="image/*"
+           style="display:none"
+           onchange="
+             const file=this.files[0];
+             if(file){
+               const reader=new FileReader();
+               reader.onload=function(e){
+                 document.getElementById('invoiceLogoPreview').src=e.target.result;
+                 document.getElementById('invoiceLogoPreview').style.display='block';
+                 document.getElementById('invoiceLogoText').style.display='none';
+                 localStorage.setItem('barfInvoiceLogo',e.target.result);
+               };
+               reader.readAsDataURL(file);
+             }
+           ">
+  </div>
+
+  <!-- عنوان وسط -->
+  <div style="
+    text-align:center;
+    padding-top:5px;
+    margin-bottom:18px;
+  ">
+    <div style="
+      font-size:27px;
+      font-weight:800;
+      color:#176b5b;
+      line-height:1.5;
+    ">
+      فاکتور تحویل کالا
     </div>
-    <div style="text-align:left;font-size:12px;">
-      <b>شماره فاکتور: ${i.no}</b><br>
-      نام مشتری: <b>${esc(i.customer)}</b>
+  </div>
+
+  <!-- اطلاعات فاکتور -->
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+  ">
+
+    <!-- سمت راست: مشتری -->
+    <div style="
+      flex:1;
+      background:#f1f8f6;
+      border-radius:12px;
+      padding:10px 14px;
+    ">
+      <div style="
+        font-size:12px;
+        color:#777;
+        margin-bottom:5px;
+      ">
+        👤 نام مشتری
+      </div>
+
+      <div style="
+        font-size:16px;
+        font-weight:bold;
+        color:#111;
+      ">
+        ${esc(i.customer)}
+      </div>
     </div>
+
+    <!-- سمت چپ: تاریخ و شماره -->
+    <div style="
+      flex:1;
+      text-align:left;
+      font-size:13px;
+      line-height:2;
+      color:#333;
+    ">
+      <div>
+        <b>شماره فاکتور:</b>
+        ${i.no}
+      </div>
+
+      <div>
+        <b>تاریخ:</b>
+        ${i.date}
+      </div>
+    </div>
+
+  </div>
+
+</div>
   </div>
 
   <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
