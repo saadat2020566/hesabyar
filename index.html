@@ -402,9 +402,25 @@ let pay=Math.min(total,+document.getElementById("paid").value||0);
 let remaining=total-pay;
 let cid=document.getElementById("ic").value||null;
 let c=cid?data.customers.find(x=>String(x.id)===cid):null;
-let no=+document.getElementById("invoiceNo").value||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
+function faToEnDigits(value){
+  return String(value ?? "").replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+}
 
-let inv=await sb.from("invoices").insert({user_id:currentUser.id,invoice_no:no,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:sub,discount:discountAmount,total,paid:pay,remaining}).select().single();
+let no=+faToEnDigits(document.getElementById("invoiceNo").value)||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
+let invoiceDate=document.getElementById("invDate").value;
+
+let inv=await sb.from("invoices").insert({
+  user_id:currentUser.id,
+  invoice_no:no,
+  invoice_date:invoiceDate,
+  customer_id:cid?+cid:null,
+  customer_name:c?.name||"مشتری متفرقه",
+  subtotal:sub,
+  discount:discountAmount,
+  total,
+  paid:pay,
+  remaining
+}).select().single();
 if(inv.error)return alert(inv.error.message);
 
 let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
@@ -461,15 +477,15 @@ openModal(`
     text-align:center;
   ">
     <label for="invoiceLogoInput" style="
-      display:block;
-      width:60px;
-height:60px;
-border:none;
-background:transparent;
-border-radius:0;
-cursor:pointer;
-padding:0;
-    ">
+  display:block;
+  width:60px;
+  height:60px;
+  border:none;
+  background:transparent;
+  border-radius:0;
+  cursor:pointer;
+  padding:0;
+">
       <img id="invoiceLogoPreview"
            src=""
            style="
@@ -480,14 +496,7 @@ padding:0;
              display:none;
            ">
 
-      <div id="invoiceLogoText" style="
-        color:#176b5b;
-        font-size:13px;
-        font-weight:bold;
-        padding-top:18px;
-      ">
-        🖼️<br>انتخاب لوگو
-      </div>
+      <div id="invoiceLogoText" style="display:none;"></div>
     </label>
 
     <input id="invoiceLogoInput"
