@@ -262,16 +262,32 @@ let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 
 openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
-<div class="form">
-  <div class="field">
+<div class="field">
   <label>شماره فاکتور</label>
   <input
     id="invoiceNo"
+    class="input"
     type="text"
     inputmode="numeric"
     autocomplete="off"
-    oninput="this.value=this.value.replace(/[^0-9۰-۹]/g,'')"
+    dir="ltr"
+    style="text-align:right"
+    oninput="
+      this.value = this.value
+        .replace(/0/g,'۰')
+        .replace(/1/g,'۱')
+        .replace(/2/g,'۲')
+        .replace(/3/g,'۳')
+        .replace(/4/g,'۴')
+        .replace(/5/g,'۵')
+        .replace(/6/g,'۶')
+        .replace(/7/g,'۷')
+        .replace(/8/g,'۸')
+        .replace(/9/g,'۹')
+        .replace(/[^۰-۹]/g,'');
+    "
   >
+</div>
 </div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
