@@ -263,7 +263,11 @@ let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 
 openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
 <div class="form">
-  <div class="field"><label>شماره فاکتور</label><input id="invNo" class="input" type="number" value="${defaultNo}"></div>
+  <div class="field"><label>شماره فاکتور</label><input id="invoiceNo"
+       type="text"
+       inputmode="numeric"
+       oninput="this.value=this.value.replace(/[^0-9۰-۹]/g,'')"
+       ...></div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
 </div>
