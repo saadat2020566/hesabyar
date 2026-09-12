@@ -133,7 +133,7 @@ let currentInvoiceItems=[];
 const money=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
 const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-
+const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
 const nav=p=>{
   document.querySelectorAll("[data-page]").forEach(b=>{
     b.classList.toggle("active", b.getAttribute("data-page")===p);
@@ -497,6 +497,14 @@ openModal(`
            ">
 
       <div id="invoiceLogoText" style="display:none;"></div>
+      <div id="invoiceLogoText" style="
+  color:#176b5b;
+  font-size:13px;
+  font-weight:bold;
+  padding-top:18px;
+">
+  🖼️<br>انتخاب لوگو
+</div>
     </label>
 
     <input id="invoiceLogoInput"
