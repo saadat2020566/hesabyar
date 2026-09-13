@@ -546,6 +546,7 @@ openModal(`
                  document.getElementById('invoiceLogoPreview').src=e.target.result;
                  document.getElementById('invoiceLogoPreview').style.display='block';
                  document.getElementById('invoiceLogoText').style.display='none';
+                 document.getElementById('removeInvoiceLogoBtn').style.display='block';
                  localStorage.setItem('barfInvoiceLogo',e.target.result);
                };
                reader.readAsDataURL(file);
