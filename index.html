@@ -506,17 +506,6 @@ openModal(`
   🖼️<br>انتخاب لوگو
 </div>
     </label>
-<button type="button" class="secondary"
-  onclick="
-    localStorage.removeItem('barfInvoiceLogo');
-    document.getElementById('invoiceLogoPreview').src='';
-    document.getElementById('invoiceLogoPreview').style.display='none';
-    document.getElementById('invoiceLogoText').style.display='block';
-    document.getElementById('invoiceLogoInput').value='';
-  "
-  style="margin-top:5px;font-size:11px;padding:5px 8px;">
-  🗑️ حذف لوگو
-</button>
     <input id="invoiceLogoInput"
            type="file"
            accept="image/*"
