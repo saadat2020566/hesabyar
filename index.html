@@ -448,10 +448,10 @@ let rows=(r.data||[]).map((x, idx)=>{
   let typeName=parts[0];
   let modelName=parts[1]||"-";
   return `<tr>
-    <td>${idx+1}</td>
+    <td>${faNum(idx+1)}</td>
     <td>${esc(typeName)}</td>
     <td>${esc(modelName)}</td>
-    <td>${x.quantity}</td>
+    <td>${faNum(x.quantity)}</td>
     <td>${money(x.unit_price)}</td>
     <td>${money(x.line_total)}</td>
   </tr>`;
