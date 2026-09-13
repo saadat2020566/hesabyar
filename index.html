@@ -675,27 +675,62 @@ await loadData();
 render(document.querySelector(".side button.active")?.getAttribute("data-page")||"home");
 };
 
-window.downloadPDF=no=>{
-  let element=document.getElementById("printableInvoice");
-  let logoText=document.getElementById("invoiceLogoText");
+window.downloadPDF=async no=>{
+  let original=document.getElementById("printableInvoice");
+  if(!original)return alert("فاکتور برای ساخت PDF پیدا نشد.");
 
-  if(logoText) logoText.style.display="none";
+  let clone=original.cloneNode(true);
+
+  let logoText=clone.querySelector("#invoiceLogoText");
+  let removeBtn=clone.querySelector("#removeInvoiceLogoBtn");
+
+  if(logoText)logoText.remove();
+  if(removeBtn)removeBtn.remove();
+
+  clone.style.width="794px";
+  clone.style.maxHeight="none";
+  clone.style.overflow="visible";
+  clone.style.position="absolute";
+  clone.style.left="-10000px";
+  clone.style.top="0";
+  clone.style.background="#fff";
+
+  document.body.appendChild(clone);
+
+  let images=clone.querySelectorAll("img");
+  await Promise.all(
+    Array.from(images).map(img=>{
+      if(img.complete)return Promise.resolve();
+      return new Promise(resolve=>{
+        img.onload=resolve;
+        img.onerror=resolve;
+      });
+    })
+  );
 
   let opt={
     margin:10,
     filename:`invoice-${no}.pdf`,
-    image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    image:{type:"jpeg",quality:0.98},
+    html2canvas:{
+      scale:2,
+      useCORS:true,
+      backgroundColor:"#ffffff"
+    },
+    jsPDF:{
+      unit:"mm",
+      format:"a4",
+      orientation:"portrait"
+    }
   };
 
-  html2pdf()
-    .from(element)
-    .set(opt)
-    .save()
-    .then(()=>{
-      if(logoText) logoText.style.display="block";
-    });
+  try{
+    await html2pdf().from(clone).set(opt).save();
+  }catch(e){
+    alert("ساخت PDF با خطا مواجه شد: "+e.message);
+  }finally{
+    clone.remove();
+  }
 };
 
 start();
