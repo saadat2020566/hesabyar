@@ -480,7 +480,7 @@ openModal(`
 ">
 
   <!-- لوگو -->
-  <div class="noPrint" style="
+  <div style="
     position:absolute;
     left:0;
     top:0;
@@ -503,7 +503,7 @@ openModal(`
          src=""
          style="width:100%;height:100%;object-fit:contain;border-radius:8px;display:none;">
 
-    <div id="invoiceLogoText" style="
+    <div id="invoiceLogoText" class="noPrint" style="
       color:#176b5b;
       font-size:13px;
       font-weight:bold;
@@ -513,7 +513,7 @@ openModal(`
     </div>
   </label>
 
-  <button id="removeInvoiceLogoBtn"
+  <button id="removeInvoiceLogoBtn" class="noPrint"
           type="button"
           onclick="
             localStorage.removeItem('barfInvoiceLogo');
@@ -543,7 +543,7 @@ openModal(`
           ">×</button>
 
 </div>
-    <input id="invoiceLogoInput"
+    <input id="invoiceLogoInput" class="noPrint"
            type="file"
            accept="image/*"
            style="display:none"
@@ -632,9 +632,6 @@ openModal(`
 
   </div>
 
-</div>
-  </div>
-
   <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
     <thead>
       <tr style="background:#eee;border-bottom:1px solid #ccc;">
@@ -673,6 +670,17 @@ openModal(`
   <button class="close" type="button" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
 </div>
 `);
+
+const savedLogo=localStorage.getItem("barfInvoiceLogo");
+const logoImg=document.getElementById("invoiceLogoPreview");
+const logoText=document.getElementById("invoiceLogoText");
+const logoRemove=document.getElementById("removeInvoiceLogoBtn");
+if(savedLogo && logoImg){
+  logoImg.src=savedLogo;
+  logoImg.style.display="block";
+  if(logoText) logoText.style.display="none";
+  if(logoRemove) logoRemove.style.display="block";
+}
 };
 
 window.deleteInvoice=async id=>{
