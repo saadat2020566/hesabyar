@@ -675,7 +675,8 @@ await loadData();
 render(document.querySelector(".side button.active")?.getAttribute("data-page")||"home");
 };
 
-window.downloadPDF=async no=>{
+window.downloadPDF=async function(no){
+
   const element=document.getElementById("printableInvoice");
 
   if(!element){
@@ -683,93 +684,54 @@ window.downloadPDF=async no=>{
     return;
   }
 
-  const buttons=element.querySelectorAll("button");
-  buttons.forEach(b=>b.style.display="none");
-
-  const oldWidth=element.style.width;
-  const oldHeight=element.style.height;
-  const oldOverflow=element.style.overflow;
-
-  element.style.width="794px";
-  element.style.height="auto";
-  element.style.overflow="visible";
-
   try{
 
     const canvas=await html2canvas(element,{
-      scale:1,
-      useCORS:true,
-      allowTaint:true,
+      scale:2,
       backgroundColor:"#ffffff",
-      logging:false,
-      scrollX:0,
-      scrollY:0,
-      windowWidth:794,
-      windowHeight:element.scrollHeight
+      useCORS:true,
+      allowTaint:true
     });
+
+    if(!canvas || canvas.width===0 || canvas.height===0){
+      throw new Error("تصویر فاکتور ساخته نشد");
+    }
 
     const imgData=canvas.toDataURL("image/jpeg",0.95);
 
-    const pdf=new jspdf.jsPDF({
-      orientation:"portrait",
-      unit:"mm",
-      format:"a4"
-    });
+    const PDF=window.jspdf
+      ? window.jspdf.jsPDF
+      : window.jsPDF;
+
+    if(!PDF){
+      throw new Error("کتابخانه PDF پیدا نشد");
+    }
+
+    const pdf=new PDF("p","mm","a4");
 
     const pageWidth=210;
     const pageHeight=297;
     const margin=10;
 
-    const imgWidth=pageWidth-(margin*2);
-    const imgHeight=(canvas.height*imgWidth)/canvas.width;
-
-    let heightLeft=imgHeight;
-    let position=margin;
+    const width=pageWidth-(margin*2);
+    const height=(canvas.height*width)/canvas.width;
 
     pdf.addImage(
       imgData,
       "JPEG",
       margin,
-      position,
-      imgWidth,
-      imgHeight
+      margin,
+      width,
+      height
     );
-
-    heightLeft-=pageHeight-(margin*2);
-
-    while(heightLeft>0){
-
-      position=margin-heightLeft;
-
-      pdf.addPage();
-
-      pdf.addImage(
-        imgData,
-        "JPEG",
-        margin,
-        position,
-        imgWidth,
-        imgHeight
-      );
-
-      heightLeft-=pageHeight-(margin*2);
-    }
 
     pdf.save("invoice-"+no+".pdf");
 
   }catch(error){
 
-    console.error(error);
+    console.error("PDF ERROR:",error);
 
-    alert("خطا در ساخت PDF: "+error.message);
-
-  }finally{
-
-    element.style.width=oldWidth;
-    element.style.height=oldHeight;
-    element.style.overflow=oldOverflow;
-
-    buttons.forEach(b=>b.style.display="");
+    alert("خطا در ساخت PDF");
 
   }
 };
