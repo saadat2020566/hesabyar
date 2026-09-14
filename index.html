@@ -504,7 +504,13 @@ function faToEnDigits(value){
   return String(value ?? "").replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
 }
 
-let no=+faToEnDigits(document.getElementById("invoiceNo").value)||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
+let no=+faToEnDigits(const nextInvoiceNo=localStorage.getItem("barfNextInvoiceNo");
+
+document.getElementById("invoiceNo").value=nextInvoiceNo || "";);
+
+if(!no){
+  return alert("لطفاً شماره فاکتور را وارد کنید.");
+}
 let invoiceDate=document.getElementById("invDate").value;
 
 let inv=await sb.from("invoices").insert({
@@ -535,7 +541,7 @@ if(inv.error){
 
   return alert("خطا در ثبت فاکتور:\n" + msg);
 }
-
+localStorage.setItem("barfNextInvoiceNo", String(no + 1));
 let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
 if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
 
