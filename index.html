@@ -698,9 +698,11 @@ window.downloadPDF=async no=>{
   document.body.appendChild(clone);
 
   let images=clone.querySelectorAll("img");
+
   await Promise.all(
     Array.from(images).map(img=>{
       if(img.complete)return Promise.resolve();
+
       return new Promise(resolve=>{
         img.onload=resolve;
         img.onerror=resolve;
