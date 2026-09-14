@@ -519,7 +519,22 @@ let inv=await sb.from("invoices").insert({
   paid:pay,
   remaining
 }).select().single();
-if(inv.error)return alert(inv.error.message);
+if(inv.error){
+  const msg=String(inv.error.message||"");
+
+  if(
+    msg.includes("duplicate key") ||
+    msg.includes("invoices_invoice_no_key")
+  ){
+    return alert(
+      "شماره فاکتور تکراری است.\n\n" +
+      "این شماره قبلاً برای یک فاکتور استفاده شده است.\n" +
+      "لطفاً شماره فاکتور دیگری وارد کنید."
+    );
+  }
+
+  return alert("خطا در ثبت فاکتور:\n" + msg);
+}
 
 let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
 if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
