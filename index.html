@@ -44,7 +44,18 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
 .authLogo{width:64px;height:64px;border-radius:18px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:auto}
 .authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}
-</style></head>
+</style><style>
+@media print{
+  .noPrint{display:none !important;}
+  #printableInvoice{
+    width:100% !important;
+    max-height:none !important;
+    overflow:visible !important;
+    box-shadow:none !important;
+  }
+}
+</style>
+</head>
   <script>
     #splash{
   position:fixed;
@@ -469,14 +480,13 @@ openModal(`
 ">
 
   <!-- لوگو -->
-  <div style="
+  <div class="noPrint" style="
     position:absolute;
     left:0;
     top:0;
     width:65px;
     text-align:center;
   ">
-    <label>
     <div style="position:relative;width:80px;height:60px;display:inline-block;">
 
   <label for="invoiceLogoInput" style="
@@ -533,7 +543,6 @@ openModal(`
           ">×</button>
 
 </div>
-    </label>
     <input id="invoiceLogoInput"
            type="file"
            accept="image/*"
@@ -659,8 +668,7 @@ openModal(`
 </div>
 
 <br>
-<div style="display:flex;gap:10px">
-  <button class="primary" onclick="downloadPDF(${i.no})">📥 دانلود PDF</button>
+<div class="noPrint" style="display:flex;gap:10px">
   <button class="secondary" onclick="window.print()">🖨 چاپ</button>
   <button class="close" type="button" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
 </div>
@@ -675,66 +683,7 @@ await loadData();
 render(document.querySelector(".side button.active")?.getAttribute("data-page")||"home");
 };
 
-window.downloadPDF=async function(no){
 
-  const element=document.getElementById("printableInvoice");
-
-  if(!element){
-    alert("فاکتور پیدا نشد");
-    return;
-  }
-
-  try{
-
-    const canvas=await html2canvas(element,{
-      scale:2,
-      backgroundColor:"#ffffff",
-      useCORS:true,
-      allowTaint:true
-    });
-
-    if(!canvas || canvas.width===0 || canvas.height===0){
-      throw new Error("تصویر فاکتور ساخته نشد");
-    }
-
-    const imgData=canvas.toDataURL("image/jpeg",0.95);
-
-    const PDF=window.jspdf
-      ? window.jspdf.jsPDF
-      : window.jsPDF;
-
-    if(!PDF){
-      throw new Error("کتابخانه PDF پیدا نشد");
-    }
-
-    const pdf=new PDF("p","mm","a4");
-
-    const pageWidth=210;
-    const pageHeight=297;
-    const margin=10;
-
-    const width=pageWidth-(margin*2);
-    const height=(canvas.height*width)/canvas.width;
-
-    pdf.addImage(
-      imgData,
-      "JPEG",
-      margin,
-      margin,
-      width,
-      height
-    );
-
-    pdf.save("invoice-"+no+".pdf");
-
-  }catch(error){
-
-    console.error("PDF ERROR:",error);
-
-    alert("خطا در ساخت PDF");
-
-  }
-};
 
 start();
 })();
