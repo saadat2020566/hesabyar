@@ -228,7 +228,15 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
 
-const money=n=>Number(n||0).toLocaleString("fa-IR")+" تومان";
+const money=(n,unit="تومان")=>Number(n||0).toLocaleString("fa-IR")+" "+unit;
+const currencyUnit=()=>document.getElementById("invoiceCurrency")?.value||"تومان";
+const currencyFactor=unit=>unit==="ریال"?10:1;
+const toToman=(amount,unit)=>Number(amount||0)/currencyFactor(unit);
+const fromToman=(amount,unit)=>Number(amount||0)*currencyFactor(unit);
+const getInvoiceCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
+const setInvoiceCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfInvoiceCurrencies",JSON.stringify(m));};
+const getExpenseCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
+const setExpenseCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfExpenseCurrencies",JSON.stringify(m));};
 const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
@@ -279,7 +287,7 @@ async function loadData(){
  data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
  data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
  data.invoices=(i.data||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:x.invoice_date || new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
- data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,note:x.note||x.description||"",date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,note:x.note||x.description||"",date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at)),currency:getExpenseCurrency(x.id)}));
 }
 
 sb.auth.onAuthStateChange((event, session)=>{
@@ -327,7 +335,7 @@ function home(){
 
 function invoiceTable(a){
  if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(i.total)}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
@@ -367,21 +375,22 @@ window.deleteProduct=async id=>{
 };
 function finance(){
   let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);
-  let list=data.expenses.map(x=>`<div class="section" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:16px">${esc(x.title)}</div><div style="margin-top:6px;font-weight:700">${money(x.amount)}</div><div style="margin-top:6px;color:#666;font-size:13px;line-height:1.8">${esc(x.note||"بدون توضیحات")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary" style="padding:7px 10px;font-size:11px" onclick="editExpense('${x.id}')">✏️ ویرایش</button><button class="danger" style="padding:7px 10px;font-size:11px" onclick="deleteExpense('${x.id}')">🗑️ حذف</button></div></div></div>`).join("");
+  let list=data.expenses.map(x=>`<div class="section" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:16px">${esc(x.title)}</div><div style="margin-top:6px;font-weight:700">${money(fromToman(x.amount,getExpenseCurrency(x.id)),getExpenseCurrency(x.id))}</div><div style="margin-top:6px;color:#666;font-size:13px;line-height:1.8">${esc(x.note||"بدون توضیحات")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary" style="padding:7px 10px;font-size:11px" onclick="editExpense('${x.id}')">✏️ ویرایش</button><button class="danger" style="padding:7px 10px;font-size:11px" onclick="deleteExpense('${x.id}')">🗑️ حذف</button></div></div></div>`).join("");
   main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div><div class="section"><div class="sectionTitle"><h2>لیست هزینه‌ها</h2></div>${list||'<div style="color:#777;padding:12px 0">هنوز هزینه‌ای ثبت نشده است.</div>'}</div>`;
 }
 
 window.editExpense=async id=>{
   let x=data.expenses.find(e=>String(e.id)===String(id));
   if(!x)return;
-  openModal(`<div class="modalHead"><h2>ویرایش هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="een" class="input" value="${esc(x.title)}"></div><div class="field"><label>مبلغ</label><input id="eea" class="input" type="number" value="${x.amount}"></div><div class="field full"><label>توضیحات</label><input id="eenote" class="input" value="${esc(x.note||'')}"></div></div><br><button class="primary" onclick="updateExpense('${x.id}')">ذخیره تغییرات</button>`);
+  let unit=getExpenseCurrency(x.id);let shown=fromToman(x.amount,unit);openModal(`<div class="modalHead"><h2>ویرایش هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="een" class="input" value="${esc(x.title)}"></div><div class="field"><label>واحد پول</label><select id="eecurrency" class="input"><option value="تومان" ${unit==="تومان"?"selected":""}>تومان</option><option value="ریال" ${unit==="ریال"?"selected":""}>ریال</option></select></div><div class="field"><label>مبلغ</label><input id="eea" class="input" type="number" value="${shown}"></div><div class="field full"><label>توضیحات</label><input id="eenote" class="input" value="${esc(x.note||'')}"></div></div><br><button class="primary" onclick="updateExpense('${x.id}')">ذخیره تغییرات</button>`);
 };
 
 window.updateExpense=async id=>{
-  let title=document.getElementById("een").value.trim(),amount=+document.getElementById("eea").value||0,note=document.getElementById("eenote").value.trim();
+  let title=document.getElementById("een").value.trim(),inputAmount=+document.getElementById("eea").value||0,unit=document.getElementById("eecurrency")?.value||"تومان",amount=toToman(inputAmount,unit),note=document.getElementById("eenote").value.trim();
   if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");
   let r=await sb.from("expenses").update({title,amount,note}).eq("id",id).eq("user_id",currentUser.id);
   if(r.error)return alert("خطا در ویرایش هزینه:\n"+r.error.message);
+  setExpenseCurrency(id,unit);
   await loadData();closeModal();render("finance");
 };
 
@@ -407,14 +416,15 @@ window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("ن
 window.newProduct=()=>openModal(`<div class="modalHead"><h2>محصول جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="pn" class="input"></div><div class="field"><label>واحد</label><input id="pu" class="input" value="عدد"></div><div class="field"><label>قیمت خرید</label><input id="pb" class="input" type="number" value="0"></div><div class="field"><label>قیمت فروش</label><input id="ps" class="input" type="number" value="0"></div><div class="field"><label>موجودی</label><input id="pst" class="input" type="number" value="0"></div><div class="field"><label>حداقل موجودی</label><input id="pmin" class="input" type="number" value="0"></div></div><br><button class="primary" onclick="saveProduct()">ثبت</button>`);
 window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("نام محصول را وارد کنید");let r=await sb.from("products").insert({user_id:currentUser.id,name,unit:pu.value||"عدد",buy_price:+pb.value||0,sell_price:+ps.value||0,stock:+pst.value||0,min_stock:+pmin.value||0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("products")};
 
-window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
-window.saveExpense=async()=>{let title=en.value.trim(),amount=+ea.value||0;if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()});if(r.error)return alert(r.error.message);await loadData();closeModal();render("finance")};
+window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>واحد پول</label><select id="expenseCurrency" class="input"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
+window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,unit=document.getElementById("expenseCurrency")?.value||"تومان";if(!title||!inputAmount)return alert("عنوان و مبلغ را وارد کنید");let amount=toToman(inputAmount,unit);let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()}).select().single();if(r.error)return alert(r.error.message);setExpenseCurrency(r.data.id,unit);await loadData();closeModal();render("finance")};
 
 window.newInvoice=()=>{
 currentInvoiceItems=[];
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
 let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
+window._invoiceCurrency="تومان";
 
 openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
 <div class="field">
@@ -446,6 +456,7 @@ openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="c
 </div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
+<div class="field full"><label>واحد پول</label><select id="invoiceCurrency" class="input" onchange="updateInvoiceCurrency()"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div>
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
@@ -454,7 +465,7 @@ updateInvoiceTotals();
 };
 
 window.openAddItemModal=()=>{
-let opts=data.products.map(p=>`<option value="${p.id}" data-price="${p.sell}">${esc(p.name)} (${money(p.sell)})</option>`).join("");
+let unit=currencyUnit();let opts=data.products.map(p=>`<option value="${p.id}" data-price="${fromToman(p.sell,unit)}">${esc(p.name)} (${money(fromToman(p.sell,unit),unit)})</option>`).join("");
 document.getElementById("subBox").innerHTML=`
 <div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" type="button" onclick="closeSubModal()">×</button></div>
 <div class="field full"><label>نوع کالا</label><input id="subProdName" class="input"></div>
@@ -473,6 +484,19 @@ document.getElementById("subModal").classList.remove("open");
 window.closeSubModal = closeSubModal;
 
 document.getElementById("subModal").onclick=e=>{if(e.target.id==="subModal")closeSubModal()};
+
+window.updateInvoiceCurrency=()=>{
+  let next=currencyUnit();
+  let prev=window._invoiceCurrency||"تومان";
+  if(prev===next){updateInvoiceTotals();return;}
+  let ratio=currencyFactor(next)/currencyFactor(prev);
+  currentInvoiceItems=currentInvoiceItems.map(x=>({...x,unit:x.unit*ratio,total:x.total*ratio}));
+  let paid=document.getElementById("paid");
+  if(paid) paid.value=(+paid.value||0)*ratio;
+  window._invoiceCurrency=next;
+  renderInvoiceItems();
+  updateInvoiceTotals();
+};
 
 window.onSubProdChange=()=>{
 let sel=document.getElementById("subProd");
@@ -540,9 +564,10 @@ let total=Math.max(0, sub - discountAmount);
 let p=+document.getElementById("paid")?.value||0;
 let remain=Math.max(0, total-p);
 
-if(document.getElementById("sub")) document.getElementById("sub").textContent=money(sub);
-if(document.getElementById("total")) document.getElementById("total").textContent=money(total);
-if(document.getElementById("remain")) document.getElementById("remain").textContent=money(remain);
+let unit=currencyUnit();
+if(document.getElementById("sub")) document.getElementById("sub").textContent=money(sub,unit);
+if(document.getElementById("total")) document.getElementById("total").textContent=money(total,unit);
+if(document.getElementById("remain")) document.getElementById("remain").textContent=money(remain,unit);
 }
 window.updateInvoiceTotals = updateInvoiceTotals;
 
@@ -555,6 +580,8 @@ let discountAmount = sub * (discPercent / 100);
 let total=Math.max(0, sub - discountAmount);
 let pay=Math.min(total,+document.getElementById("paid").value||0);
 let remaining=total-pay;
+let invoiceUnit=currencyUnit();
+let dbSub=toToman(sub,invoiceUnit),dbDiscount=toToman(discountAmount,invoiceUnit),dbTotal=toToman(total,invoiceUnit),dbPay=toToman(pay,invoiceUnit),dbRemaining=toToman(remaining,invoiceUnit);
 let cid=document.getElementById("ic").value||null;
 let c=cid?data.customers.find(x=>String(x.id)===cid):null;
 function faToEnDigits(value){
@@ -570,11 +597,11 @@ let inv=await sb.from("invoices").insert({
   invoice_date:invoiceDate,
   customer_id:cid?+cid:null,
   customer_name:c?.name||"مشتری متفرقه",
-  subtotal:sub,
-  discount:discountAmount,
-  total,
-  paid:pay,
-  remaining
+  subtotal:dbSub,
+  discount:dbDiscount,
+  total:dbTotal,
+  paid:dbPay,
+  remaining:dbRemaining
 }).select().single();
 if(inv.error){
   const msg=String(inv.error.message||"");
@@ -593,7 +620,7 @@ if(inv.error){
   return alert("خطا در ثبت فاکتور:\n" + msg);
 }
 
-let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
+let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:toToman(x.unit,invoiceUnit),line_total:toToman(x.total,invoiceUnit)})));
 if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
 
 for(const x of currentInvoiceItems){
@@ -602,14 +629,16 @@ for(const x of currentInvoiceItems){
   }
 }
 if(c){
-  await sb.from("customers").update({total_purchases:c.purchases+total,debt:c.debt+remaining}).eq("id",c.id).eq("user_id",currentUser.id);
+  await sb.from("customers").update({total_purchases:c.purchases+dbTotal,debt:c.debt+dbRemaining}).eq("id",c.id).eq("user_id",currentUser.id);
 }
+setInvoiceCurrency(inv.data.id,invoiceUnit);
 await loadData();closeModal();showInvoice(inv.data.id);
 };
 
 window.showInvoice=async id=>{
 let i=data.invoices.find(x=>String(x.id)===String(id));
 if(!i) return alert("خطا! فاکتور یافت نشد.");
+let invoiceUnit=getInvoiceCurrency(i.id);
 let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
 if(r.error)return alert(r.error.message);
 
@@ -622,8 +651,8 @@ let rows=(r.data||[]).map((x, idx)=>{
     <td style="padding:8px;border:1px solid #ddd;">${esc(typeName)}</td>
     <td style="padding:8px;border:1px solid #ddd;">${esc(modelName)}</td>
     <td style="padding:8px;border:1px solid #ddd;text-align:center">${faNum(x.quantity)}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${money(x.unit_price)}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${money(x.line_total)}</td>
+    <td style="padding:8px;border:1px solid #ddd;">${money(fromToman(x.unit_price,invoiceUnit),invoiceUnit)}</td>
+    <td style="padding:8px;border:1px solid #ddd;">${money(fromToman(x.line_total,invoiceUnit),invoiceUnit)}</td>
   </tr>`;
 }).join("");
 
@@ -810,15 +839,15 @@ openModal(`
   <div style="border:1px solid #ccc;padding:10px;border-radius:8px;background:#f9f9f9;font-size:13px;margin-bottom:15px;">
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
       <span>مبلغ قابل پرداخت:</span>
-      <b>${money(i.total)}</b>
+      <b>${money(fromToman(i.total,invoiceUnit),invoiceUnit)}</b>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;color:#555">
       <span>پرداختی:</span>
-      <span>${money(i.paid)}</span>
+      <span>${money(fromToman(i.paid,invoiceUnit),invoiceUnit)}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
       <span>مانده حساب:</span>
-      <span>${money(i.remaining)}</span>
+      <span>${money(fromToman(i.remaining,invoiceUnit),invoiceUnit)}</span>
     </div>
   </div>
 </div>
