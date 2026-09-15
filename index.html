@@ -540,10 +540,25 @@ if(inv.error){
 
   return alert("خطا در ثبت فاکتور:\n" + msg);
 }
-localStorage.setItem("barfNextInvoiceNo", String(no + 1));
-let ir=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:inv.data.id,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:x.unit,line_total:x.total})));
-if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return alert(ir.error.message)}
 
+let ir=await sb.from("invoice_items").insert(
+  currentInvoiceItems.map(x=>({
+    user_id:currentUser.id,
+    invoice_id:inv.data.id,
+    product_id:x.p.id,
+    product_name:x.p.name+" | مدل: "+(x.model||"-"),
+    quantity:x.q,
+    unit_price:x.unit,
+    line_total:x.total
+  }))
+);
+
+if(ir.error){
+  await sb.from("invoices").delete().eq("id",inv.data.id);
+  return alert("خطا در ثبت اقلام فاکتور:\n"+ir.error.message);
+}
+
+localStorage.setItem("barfNextInvoiceNo",String(no+1));
 for(const x of currentInvoiceItems){
   if(x.p.id){
     await sb.from("products").update({stock:x.p.stock-x.q}).eq("id",x.p.id).eq("user_id",currentUser.id);
