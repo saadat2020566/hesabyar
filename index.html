@@ -329,7 +329,7 @@ function render(p){
 }
 
 function home(){
- const debt=data.customers.reduce((a,c)=>a+c.debt,0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
+ const debt=data.invoices.reduce((a,i)=>a+(Number(i.remaining)||0),0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
 </div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
@@ -380,7 +380,7 @@ window.deleteProduct=async id=>{
 function finance(){
   let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);
   let list=data.expenses.map(x=>`<div class="section" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:16px">${esc(x.title)}</div><div style="margin-top:6px;font-weight:700">${money(fromToman(x.amount,getExpenseCurrency(x.id)),getExpenseCurrency(x.id))}</div><div style="margin-top:6px;color:#666;font-size:13px;line-height:1.8">${esc(x.note||"بدون توضیحات")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary" style="padding:7px 10px;font-size:11px" onclick="editExpense('${x.id}')">✏️ ویرایش</button><button class="danger" style="padding:7px 10px;font-size:11px" onclick="deleteExpense('${x.id}')">🗑️ حذف</button></div></div></div>`).join("");
-  main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div><div class="section"><div class="sectionTitle"><h2>لیست هزینه‌ها</h2></div>${list||'<div style="color:#777;padding:12px 0">هنوز هزینه‌ای ثبت نشده است.</div>'}</div>`;
+  main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}</div><div class="section"><div class="sectionTitle"><h2>لیست هزینه‌ها</h2></div>${list||'<div style="color:#777;padding:12px 0">هنوز هزینه‌ای ثبت نشده است.</div>'}</div>`;
 }
 
 window.editExpense=async id=>{
