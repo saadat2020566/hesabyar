@@ -279,7 +279,7 @@ async function loadData(){
  data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
  data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
  data.invoices=(i.data||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:x.invoice_date || new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
- data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,note:x.note||x.description||"",date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
 }
 
 sb.auth.onAuthStateChange((event, session)=>{
@@ -381,8 +381,7 @@ window.updateExpense=async id=>{
   let title=document.getElementById("een").value.trim(),amount=+document.getElementById("eea").value||0,note=document.getElementById("eenote").value.trim();
   if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");
   let r=await sb.from("expenses").update({title,amount,note}).eq("id",id).eq("user_id",currentUser.id);
-  if(r.error)return alert("خطا در ویرایش هزینه:
-"+r.error.message);
+  if(r.error)return alert("خطا در ویرایش هزینه:\n"+r.error.message);
   await loadData();closeModal();render("finance");
 };
 
@@ -391,8 +390,7 @@ window.deleteExpense=async id=>{
   if(!x)return;
   if(!confirm(`آیا از حذف هزینه «${x.title}» اطمینان دارید؟`))return;
   let r=await sb.from("expenses").delete().eq("id",id).eq("user_id",currentUser.id);
-  if(r.error)return alert("خطا در حذف هزینه:
-"+r.error.message);
+  if(r.error)return alert("خطا در حذف هزینه:\n"+r.error.message);
   await loadData();render("finance");
 };
 function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
