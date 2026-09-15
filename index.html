@@ -36,6 +36,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .mobile{display:none}
 @media(max-width:800px){
 .side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}}
+
+.linkBtn{display:block;width:100%;border:0;background:transparent;color:#1976d2;font-family:inherit;font-size:13px;padding:10px 4px;cursor:pointer;text-align:center}
+.linkBtn:hover{text-decoration:underline}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -261,7 +264,20 @@ function authScreen(msg=""){
  <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
  <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
  <button class="primary fullBtn" onclick="doLogin()">ورود</button>
+ <button class="linkBtn" type="button" onclick="forgotPassword()">🔑 رمز عبور را فراموش کرده‌اید؟</button>
  </div>`;
+}
+
+window.forgotPassword=async function(){
+ const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
+ if(!email)return authScreen("ابتدا ایمیل خود را وارد کنید، سپس روی بازیابی رمز بزنید.");
+ try{
+   const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+   if(r.error)return authScreen("ارسال لینک بازیابی ناموفق بود: "+r.error.message);
+   authScreen("لینک بازیابی رمز به ایمیل شما ارسال شد. ایمیل را باز کنید و رمز جدید را تعیین کنید.");
+ }catch(e){
+   authScreen("ارسال لینک بازیابی انجام نشد. اینترنت را بررسی کنید.");
+ }
 }
 window.authScreen=authScreen;
 
@@ -296,8 +312,32 @@ async function loadData(){
  data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,note:x.note||x.description||"",date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at)),currency:getExpenseCurrency(x.id)}));
 }
 
+window.resetPasswordScreen=function(){
+ document.body.classList.add("authMode");
+ main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>رمز جدید</h1>
+ <p class="muted">رمز عبور جدید خود را وارد کنید</p>
+ <div class="field"><label>رمز عبور جدید</label><input id="newPass" class="input" type="password" autocomplete="new-password" placeholder="حداقل ۶ کاراکتر"></div>
+ <div class="field"><label>تکرار رمز عبور</label><input id="newPass2" class="input" type="password" autocomplete="new-password" placeholder="تکرار رمز عبور"></div>
+ <button class="primary fullBtn" onclick="updatePassword()">ذخیره رمز جدید</button>
+ </div>`;
+};
+window.updatePassword=async function(){
+ const a=document.getElementById("newPass")?.value||"", b=document.getElementById("newPass2")?.value||"";
+ if(a.length<6)return alert("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+ if(a!==b)return alert("رمزهای عبور یکسان نیستند.");
+ try{
+  const r=await sb.auth.updateUser({password:a});
+  if(r.error)return alert("تغییر رمز ناموفق بود: "+r.error.message);
+  alert("رمز عبور با موفقیت تغییر کرد.");
+  history.replaceState({},document.title,window.location.pathname);
+  document.body.classList.remove("authMode");
+  await loadData(); render("home");
+ }catch(e){ alert("تغییر رمز انجام نشد. دوباره تلاش کنید."); }
+};
+
 sb.auth.onAuthStateChange((event, session)=>{
  currentUser=session?.user||null;
+ if(event==="PASSWORD_RECOVERY"){ resetPasswordScreen(); return; }
  if(event==="SIGNED_OUT" && !currentUser) authScreen();
 });
 
