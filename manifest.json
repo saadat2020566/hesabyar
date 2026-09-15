@@ -1,7 +1,7 @@
 {
-  "name": "حساب‌یار",
-  "short_name": "حساب‌یار",
-  "description": "برنامه حسابداری و مدیریت فروش حساب‌یار",
+  "name": "برف",
+  "short_name": "برف",
+  "description": "برنامه حسابداری و مدیریت فروش برف",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
