@@ -116,6 +116,8 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     visibility:hidden !important;
   }
 
+  #printableInvoice #invoiceLogoWrap.noLogo{display:none!important;}
+
   #printableInvoice img{
     display:block !important;
     visibility:visible !important;
@@ -671,7 +673,7 @@ openModal(`
 ">
 
   <!-- لوگو -->
-  <div id="invoiceLogoWrap" style="
+  <div id="invoiceLogoWrap" class="noLogo" style="
     position:absolute;
     left:0;
     top:0;
@@ -711,6 +713,7 @@ openModal(`
             document.getElementById('invoiceLogoPreview').src='';
             document.getElementById('invoiceLogoPreview').style.display='none';
             document.getElementById('invoiceLogoText').style.display='block';
+            document.getElementById('invoiceLogoWrap').classList.add('noLogo');
             document.getElementById('invoiceLogoInput').value='';
             this.style.display='none';
           "
@@ -747,6 +750,7 @@ openModal(`
                  document.getElementById('invoiceLogoPreview').style.display='block';
                  document.getElementById('invoiceLogoText').style.display='none';
                  document.getElementById('removeInvoiceLogoBtn').style.display='block';
+                 document.getElementById('invoiceLogoWrap').classList.remove('noLogo');
                  localStorage.setItem('barfInvoiceLogo',e.target.result);
                };
                reader.readAsDataURL(file);
@@ -872,8 +876,7 @@ if(savedLogo && logoImg){
   logoImg.style.display="block";
   if(logoText) logoText.style.display="none";
   if(logoRemove) logoRemove.style.display="block";
-}else if(logoWrap){
-  logoWrap.style.display="none";
+  if(logoWrap) logoWrap.classList.remove("noLogo");
 }
 };
 
