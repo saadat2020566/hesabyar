@@ -505,11 +505,15 @@ function faToEnDigits(value){
 }
 
 let nextInvoiceNo=localStorage.getItem("barfNextInvoiceNo");
-let no=+faToEnDigits(nextInvoiceNo || document.getElementById("invoiceNo").value);
+let invoiceNoInput=document.getElementById("invoiceNo");
+
+let no=+faToEnDigits(nextInvoiceNo || invoiceNoInput.value);
 
 if(!no){
   return alert("لطفاً شماره فاکتور را وارد کنید.");
 }
+
+invoiceNoInput.value=String(no);
 let invoiceDate=document.getElementById("invDate").value;
 
 let inv=await sb.from("invoices").insert({
