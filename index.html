@@ -348,8 +348,23 @@ window.deleteCustomer=async id=>{
   await loadData();
   render("customers");
 };
-function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1><button class="primary" onclick="newProduct()">+ محصول جدید</button></div><input id="pq" class="input" placeholder="جستجو..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
-function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td><td>${p.stock} ${esc(p.unit)}</td><td>${p.stock<=p.min?'<span class="badge warn">موجودی کم</span>':'<span class="badge">موجود</span>'}</td></tr>`).join("")}
+function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1><button class="primary" onclick="newProduct()">+ محصول جدید</button></div><input id="pq" class="input" placeholder="جستجو..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th><th>موجودی</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
+function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td><td>${p.stock} ${esc(p.unit)}</td><td>${p.stock<=p.min?'<span class="badge warn">موجودی کم</span>':'<span class="badge">موجود</span>'}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteProduct('${p.id}')">🗑️ حذف</button></td></tr>`).join("")}
+window.deleteProduct=async id=>{
+  const p=data.products.find(x=>String(x.id)===String(id));
+  if(!p)return;
+  if(!confirm(`آیا از حذف محصول «${p.name}» اطمینان دارید؟`))return;
+  const r=await sb.from("products").delete().eq("id",id).eq("user_id",currentUser.id);
+  if(r.error){
+    const msg=String(r.error.message||"");
+    if(msg.includes("foreign key")||msg.includes("violates")){
+      return alert("این محصول در فاکتورهای ثبت‌شده استفاده شده و فعلاً قابل حذف نیست.");
+    }
+    return alert("خطا در حذف محصول:\n"+msg);
+  }
+  await loadData();
+  render("products");
+};
 function finance(){let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div>`}
 function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
 
