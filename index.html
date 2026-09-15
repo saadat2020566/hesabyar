@@ -239,7 +239,7 @@ const getExpenseCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfE
 const setExpenseCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfExpenseCurrencies",JSON.stringify(m));};
 const dashboardCurrency=()=>localStorage.getItem("barfDashboardCurrency")||"تومان";
 const setDashboardCurrency=unit=>localStorage.setItem("barfDashboardCurrency",unit);
-const dashboardMoney=n=>money(fromToman(n,dashboardCurrency()),dashboardCurrency());
+const dashboardMoney=n=>{const u=dashboardCurrency();return money(fromToman(Number(n)||0,u),u);};
 const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
@@ -328,11 +328,13 @@ function render(p){
 }
 
 function home(){
- const debt=data.customers.reduce((a,c)=>a+c.debt,0);
- const ex=data.expenses.reduce((a,c)=>a+c.amount,0);
+ // مبالغ داشبورد همیشه از اطلاعات فعلی فاکتورها/هزینه‌ها محاسبه می‌شوند
+ // تا بعد از حذف فاکتور یا ویرایش/حذف هزینه، بلافاصله درست شوند.
+ const debt=data.invoices.reduce((a,i)=>a+(Number(i.remaining)||0),0);
+ const ex=data.expenses.reduce((a,c)=>a+(Number(c.amount)||0),0);
  const ii=data.invoices.filter(i=>i.date===today());
- const s=ii.reduce((a,i)=>a+i.total,0);
- const pa=ii.reduce((a,i)=>a+i.paid,0);
+ const s=ii.reduce((a,i)=>a+(Number(i.total)||0),0);
+ const pa=ii.reduce((a,i)=>a+(Number(i.paid)||0),0);
  const unit=dashboardCurrency();
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button></div></div>
  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -889,15 +891,6 @@ window.deleteInvoice=async id=>{
  if(!confirm("آیا از حذف این فاکتور اطمینان دارید؟"))return;
  const inv=data.invoices.find(x=>String(x.id)===String(id));
  if(!inv)return alert("فاکتور یافت نشد.");
- if(inv.customerId){
-   const c=data.customers.find(x=>String(x.id)===String(inv.customerId));
-   if(c){
-     const purchases=Math.max(0,(+c.purchases||0)-(+inv.total||0));
-     const debt=Math.max(0,(+c.debt||0)-(+inv.remaining||0));
-     const cr=await sb.from("customers").update({total_purchases:purchases,debt}).eq("id",c.id).eq("user_id",currentUser.id);
-     if(cr.error)return alert("خطا در به‌روزرسانی حساب مشتری:\n"+cr.error.message);
-   }
- }
  let r=await sb.from("invoices").delete().eq("id",id).eq("user_id",currentUser.id);
  if(r.error)return alert(r.error.message);
  await loadData();
