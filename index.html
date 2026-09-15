@@ -331,8 +331,23 @@ function invoiceTable(a){
 }
 
 function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
-function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
-function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td></tr>`).join("")}
+function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th><th>عملیات</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
+function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteCustomer('${c.id}')">🗑️ حذف</button></td></tr>`).join("")}
+window.deleteCustomer=async id=>{
+  const c=data.customers.find(x=>String(x.id)===String(id));
+  if(!c)return;
+  if(!confirm(`آیا از حذف مشتری «${c.name}» اطمینان دارید؟`))return;
+  const r=await sb.from("customers").delete().eq("id",id).eq("user_id",currentUser.id);
+  if(r.error){
+    const msg=String(r.error.message||"");
+    if(msg.includes("foreign key")||msg.includes("violates")){
+      return alert("این مشتری در فاکتورهای ثبت‌شده استفاده شده و فعلاً قابل حذف نیست.");
+    }
+    return alert("خطا در حذف مشتری:\n"+msg);
+  }
+  await loadData();
+  render("customers");
+};
 function products(){main.innerHTML=`<div class="head"><h1>محصولات</h1><button class="primary" onclick="newProduct()">+ محصول جدید</button></div><input id="pq" class="input" placeholder="جستجو..." oninput="filterProducts()"><div class="table"><table><thead><tr><th>محصول</th><th>خرید</th><th>فروش</th><th>موجودی</th><th>وضعیت</th></tr></thead><tbody id="pr"></tbody></table></div>`;filterProducts()}
 function filterProducts(){let q=document.getElementById("pq")?.value||"",a=data.products.filter(p=>p.name.includes(q));document.getElementById("pr").innerHTML=a.map(p=>`<tr><td>${esc(p.name)}</td><td>${money(p.buy)}</td><td>${money(p.sell)}</td><td>${p.stock} ${esc(p.unit)}</td><td>${p.stock<=p.min?'<span class="badge warn">موجودی کم</span>':'<span class="badge">موجود</span>'}</td></tr>`).join("")}
 function finance(){let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}${metric("طلب",money(data.customers.reduce((a,c)=>a+c.debt,0)),"بدهی")}</div>`}
