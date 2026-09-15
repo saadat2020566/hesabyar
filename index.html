@@ -589,7 +589,7 @@ openModal(`
     width:65px;
     text-align:center;
   ">
-    <div id="invoiceLogoWrap" class="noLogoPrint" style="position:relative;width:80px;height:60px;display:inline-block;">
+    <div style="position:relative;width:80px;height:60px;display:inline-block;">
 
   <label for="invoiceLogoInput" style="
     display:block;
@@ -779,7 +779,7 @@ const logoText=document.getElementById("invoiceLogoText");
 const logoRemove=document.getElementById("removeInvoiceLogoBtn");
 if(savedLogo && logoImg){
   logoImg.src=savedLogo;
-  logoImg.style.display="block"; const logoWrap=document.getElementById("invoiceLogoWrap"); if(logoWrap) logoWrap.classList.remove("noLogoPrint");
+  logoImg.style.display="block";
   if(logoText) logoText.style.display="none";
   if(logoRemove) logoRemove.style.display="block";
 }
