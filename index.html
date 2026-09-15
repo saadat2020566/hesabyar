@@ -504,9 +504,8 @@ function faToEnDigits(value){
   return String(value ?? "").replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
 }
 
-let no=+faToEnDigits(const nextInvoiceNo=localStorage.getItem("barfNextInvoiceNo");
-
-document.getElementById("invoiceNo").value=nextInvoiceNo || "";);
+let nextInvoiceNo=localStorage.getItem("barfNextInvoiceNo");
+let no=+faToEnDigits(nextInvoiceNo || document.getElementById("invoiceNo").value);
 
 if(!no){
   return alert("لطفاً شماره فاکتور را وارد کنید.");
