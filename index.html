@@ -258,7 +258,7 @@ const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">
 
 function authScreen(msg=""){
  document.body.classList.add("authMode");
- main.innerHTML=`<div class="authCard"><div <div class="authLogo">❄️</div><h1>برف</h1>
+ main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>برف</h1>
  <p class="muted">بساز راحت فاکتور</p>
  ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
  <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
@@ -343,6 +343,15 @@ sb.auth.onAuthStateChange((event, session)=>{
 
 async function start(){
  try{
+   // لینک بازیابی رمز نباید توسط start با صفحه ورود یا داشبورد جایگزین شود.
+   const recoveryLink = /(^|[&#])type=recovery(&|#|$)/.test(window.location.hash) ||
+                        new URLSearchParams(window.location.search).get("type")==="recovery";
+   if(recoveryLink){
+     document.body.classList.add("authMode");
+     resetPasswordScreen();
+     return;
+   }
+
    const s=await sb.auth.getSession();
    currentUser=s.data.session?.user||null;
    if(!currentUser){authScreen();return;}
