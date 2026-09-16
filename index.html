@@ -38,19 +38,17 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .side{display:none}.wrap{display:block}main{padding:14px;padding-bottom:78px}.cards{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr}.mobile{display:flex;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid #e4ebe8;z-index:10;justify-content:space-around}.mobile button{border:0;background:#fff;color:#65706d;font-size:10px}.mobile button.active{color:#176b5b;font-weight:bold}.form{grid-template-columns:1fr}.full{grid-column:auto}}
 
 .linkBtn{display:block;width:100%;border:0;background:transparent;color:#1976d2;font-family:inherit;font-size:13px;padding:10px 4px;cursor:pointer;text-align:center}
-.authMode .top,.authMode .wrap,.authMode .mobile{display:none!important}
-.authMode #main{width:100%;margin:0;padding:0}
-.authMode .recoveryBtn{width:88%!important;margin:8px auto 0!important;font-size:12px!important;padding:7px 10px!important;min-height:36px!important}
-
 .linkBtn:hover{text-decoration:underline}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-.authMode #main{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.authMode .top,.authMode .side,.authMode .mobile{display:none !important;}
+.authMode .wrap{min-height:100vh !important;display:block !important;}
+.authMode #main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
 .authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
 .authLogo{width:64px;height:64px;border-radius:18px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:auto}
-.authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}
+.authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}.recoveryBtn{width:100%;margin-top:8px;padding:9px 12px;font-size:13px}
 </style><style>
 @page{size:A4 portrait;margin:0}
 @media print{
@@ -231,8 +229,6 @@ if ("serviceWorker" in navigator) {
 <div id="modal" class="modal"><div id="box" class="box"></div></div>
 <div id="subModal" class="modal" style="z-index:30"><div id="subBox" class="box" style="width:min(420px,100%)"></div></div>
 
-
-
 <script>
 (function(){
 "use strict";
@@ -269,7 +265,7 @@ function authScreen(msg=""){
  <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
  <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
  <button class="primary fullBtn" onclick="doLogin()">ورود</button>
- <button class="primary fullBtn recoveryBtn" type="button" onclick="forgotPassword()">🔑 بازیابی رمز عبور</button>
+ <button class="primary recoveryBtn" type="button" onclick="forgotPassword()">🔑 بازیابی رمز عبور</button>
  </div>`;
 }
 
@@ -342,13 +338,12 @@ window.updatePassword=async function(){
 
 sb.auth.onAuthStateChange((event, session)=>{
  currentUser=session?.user||null;
- if(event==="PASSWORD_RECOVERY"){ resetPasswordScreen(); return; }
+ if(event==="PASSWORD_RECOVERY"){ document.body.classList.add("authMode"); resetPasswordScreen(); return; }
  if(event==="SIGNED_OUT" && !currentUser) authScreen();
 });
 
 async function start(){
  try{
-   // لینک بازیابی رمز نباید توسط start با صفحه ورود یا داشبورد جایگزین شود.
    const recoveryLink = /(^|[&#])type=recovery(&|#|$)/.test(window.location.hash) ||
                         new URLSearchParams(window.location.search).get("type")==="recovery";
    if(recoveryLink){
@@ -356,7 +351,6 @@ async function start(){
      resetPasswordScreen();
      return;
    }
-
    const s=await sb.auth.getSession();
    currentUser=s.data.session?.user||null;
    if(!currentUser){authScreen();return;}
