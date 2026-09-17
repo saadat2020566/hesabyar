@@ -251,14 +251,21 @@ const dashboardCurrency=()=>"تومان"; const setDashboardCurrency=unit=>{}; c
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
 let currentPage="home";
+let appHistoryPushed=false;
+
 const nav=p=>{
   currentPage=p;
   document.querySelectorAll("[data-page]").forEach(b=>{
     b.classList.toggle("active", b.getAttribute("data-page")===p);
   });
 };
+
 window.addEventListener("popstate",()=>{
-  if(currentPage!=="home") render("home",false);
+  if(currentPage!=="home"){
+    appHistoryPushed=false;
+    history.replaceState({page:"home"},"",window.location.pathname+window.location.search);
+    render("home",false);
+  }
 });
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
@@ -379,7 +386,19 @@ document.addEventListener("click", e => {
 
 function render(p,pushHistory=true){
  if(!currentUser)return authScreen();
- if(pushHistory && p!==currentPage) history.pushState({page:p},"","#"+p);
+
+ if(pushHistory && p!=="home"){
+   if(!appHistoryPushed){
+     history.pushState({page:p},"",window.location.pathname+window.location.search+"#"+p);
+     appHistoryPushed=true;
+   }else{
+     history.replaceState({page:p},"",window.location.pathname+window.location.search+"#"+p);
+   }
+ }else if(p==="home" && pushHistory){
+   if(appHistoryPushed){ history.back(); return; }
+   history.replaceState({page:"home"},"",window.location.pathname+window.location.search);
+ }
+
  nav(p);
  ({home,sales,customers,products,finance,reports}[p]||home)();
 }
