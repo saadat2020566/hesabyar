@@ -250,11 +250,16 @@ const setExpenseCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getI
 const dashboardCurrency=()=>"تومان"; const setDashboardCurrency=unit=>{}; const dashboardMoney=n=>money(Number(n)||0,"تومان"); const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+let currentPage="home";
 const nav=p=>{
+  currentPage=p;
   document.querySelectorAll("[data-page]").forEach(b=>{
     b.classList.toggle("active", b.getAttribute("data-page")===p);
   });
 };
+window.addEventListener("popstate",()=>{
+  if(currentPage!=="home") render("home",false);
+});
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
 function authScreen(msg=""){
@@ -372,8 +377,9 @@ document.addEventListener("click", e => {
   }
 });
 
-function render(p){
+function render(p,pushHistory=true){
  if(!currentUser)return authScreen();
+ if(pushHistory && p!==currentPage) history.pushState({page:p},"","#"+p);
  nav(p);
  ({home,sales,customers,products,finance,reports}[p]||home)();
 }
