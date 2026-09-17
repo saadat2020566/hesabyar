@@ -149,6 +149,21 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   }
 }
 </style>
+
+<style>
+.checkBox{width:min(1040px,96vw)!important;max-width:1040px!important;max-height:94vh!important;padding:28px!important}
+.checkTypeGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px}
+.checkTypeCard{border:1px solid #dfe9e5;border-radius:20px;padding:24px;text-align:center;background:#fbfdfc}
+.checkTypeIcon{font-size:34px;margin-bottom:8px}.checkTypeCard h3{margin:6px 0;font-size:18px}.checkTypeCard p{font-size:12px;color:#71807b;min-height:36px;line-height:1.8}
+.checkTypeCard button{width:100%;margin-top:10px}
+.checkFormGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkFormGrid .full{grid-column:1/-1}
+.checkFormBottom{display:flex;gap:10px;margin-top:20px}.checkFormBottom button{flex:1}
+.persianDateHint{display:block;color:#176b5b;font-size:11px;margin-top:6px}
+.checkTableWrap{overflow:auto;border:1px solid #e1e9e6;border-radius:16px}.checkTable{width:100%;border-collapse:collapse;min-width:760px;background:#fff}.checkTable th,.checkTable td{padding:11px 9px;border-bottom:1px solid #e8eeec;text-align:center;font-size:12px}.checkTable th{background:#f3f7f5;font-weight:800;color:#29413a}.checkTable tr:last-child td{border-bottom:0}.checkActions{white-space:nowrap}.checkActions button{padding:7px 10px!important;font-size:11px!important;margin:2px}
+.checkEmpty{padding:32px;text-align:center;border:1px dashed #d5e2dd;border-radius:16px;color:#77837f;font-size:13px;background:#fafcfb}
+.checkDetailTable{border:1px solid #e0e8e5;border-radius:16px;overflow:hidden}.checkDetailTable table{width:100%;border-collapse:collapse}.checkDetailTable th,.checkDetailTable td{padding:13px;border-bottom:1px solid #e7ecea;text-align:right;font-size:13px}.checkDetailTable th{width:32%;background:#f5f8f7;color:#385049}.checkDetailTable tr:last-child th,.checkDetailTable tr:last-child td{border-bottom:0}
+@media(max-width:700px){.checkBox{padding:18px!important}.checkTypeGrid,.checkFormGrid{grid-template-columns:1fr}.checkFormGrid .full{grid-column:auto}.checkTypeCard{padding:18px}.checkTable{min-width:760px}}
+</style>
 </head>
 <style>
 #splash{
@@ -490,7 +505,7 @@ window.deleteExpense=async id=>{
 };
 window.finance=()=>render("finance"); function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
 
-function openModal(h){document.getElementById("box").innerHTML=h;document.getElementById("modal").classList.add("open")}
+function openModal(h){const box=document.getElementById("box");box.innerHTML=h;box.classList.toggle("checkBox",String(h).includes("ثبت چک")||String(h).includes("چک های دریافتی")||String(h).includes("جزئیات چک")||String(h).includes("دریافت چک")||String(h).includes("چک خودم"));document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
 window.closeModal = closeModal;
 
@@ -500,62 +515,101 @@ const persianToday=()=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numer
 const persianDigits=s=>String(s||'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const validPersianDate=s=>/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(persianDigits(s).replace(/-/g,'/'));
 const getChecks=()=>{try{return JSON.parse(localStorage.getItem('barfChecks')||'[]')}catch(e){return[]}};
+const setChecks=a=>localStorage.setItem('barfChecks',JSON.stringify(a));
+const isoToday=()=>{const d=new Date();return d.toISOString().slice(0,10)};
+const isoToPersian=iso=>{if(!iso)return '';const d=new Date(iso+'T12:00:00');return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)};
+const checkSort=(a,b)=>String(a.no||'').localeCompare(String(b.no||''),'fa',{numeric:true,sensitivity:'base'});
+const checkMoney=n=>Number(n||0).toLocaleString('fa-IR')+' تومان';
+
 const checkList=(type)=>{
-  const arr=getChecks().filter(x=>x.type===type);
-  if(!arr.length)return '<div style="color:#777;font-size:12px;padding:8px 2px">هنوز چکی ثبت نشده است.</div>';
-  return '<div style="margin-top:8px;display:grid;gap:8px">'+arr.map(x=>`<div class="section" style="margin:0;padding:10px;border:1px solid #e4ebe8"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="font-weight:700">شماره: ${esc(x.no||'—')}</div><div style="font-size:12px;color:#666;margin-top:4px">تاریخ: ${esc(x.date||'—')} | سررسید: ${esc(x.due||'—')}</div><div style="font-size:13px;margin-top:4px">مبلغ: ${Number(x.amount||0).toLocaleString('fa-IR')} تومان</div><div style="font-size:12px;color:#666;margin-top:4px">${esc(type==='received'?'دریافت کننده: ':'گیرنده: ')}${esc(x.receiver||'—')} | بانک: ${esc(x.bank||'—')}</div>${x.reason?`<div style="font-size:12px;color:#666;margin-top:4px">بابت: ${esc(x.reason)}</div>`:''}${x.note?`<div style="font-size:12px;color:#666;margin-top:4px">توضیحات: ${esc(x.note)}</div>`:''}</div><button class="danger" style="padding:7px 9px;font-size:11px;flex:none" onclick="deleteCheck('${x.id}')">🗑️ حذف</button></div></div>`).join('')+'</div>';
+  const arr=getChecks().filter(x=>x.type===type).sort(checkSort);
+  if(!arr.length)return '<div class="checkEmpty">هنوز چکی ثبت نشده است.</div>';
+  return `<div class="checkTableWrap"><table class="checkTable"><thead><tr><th>ردیف</th><th>شماره چک</th><th>تاریخ</th><th>سررسید</th><th>مبلغ</th><th>عملیات</th></tr></thead><tbody>${arr.map((x,i)=>`<tr><td>${i+1}</td><td dir="ltr"><b>${esc(x.no||'—')}</b></td><td>${esc(x.date||'—')}</td><td>${esc(x.due||'—')}</td><td>${checkMoney(x.amount)}</td><td class="checkActions"><button class="secondary" type="button" onclick="showCheck('${x.id}')">👁️ نمایش</button><button class="danger" type="button" onclick="deleteCheck('${x.id}')">🗑️ حذف</button></td></tr>`).join('')}</tbody></table></div>`;
+};
+
+const checkPage=(type)=>{
+  const received=type==='received';
+  const arr=getChecks().filter(x=>x.type===type).sort(checkSort);
+  const title=received?'چک های دریافتی':'چک های خودم';
+  const label=received?'دریافت کننده':'گیرنده';
+  openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">ثبت، مشاهده و مدیریت چک‌ها بر اساس شماره چک</div></div><button class="close" type="button" onclick="newCheck()">×</button></div>
+    <button class="primary" style="width:100%;margin-bottom:16px" type="button" onclick="openCheckForm('${type}')">＋ ثبت چک جدید</button>
+    ${arr.length?`<div class="checkTableWrap"><table class="checkTable"><thead><tr><th>ردیف</th><th>شماره چک</th><th>تاریخ</th><th>سررسید</th><th>${label}</th><th>مبلغ</th><th>بانک</th><th>عملیات</th></tr></thead><tbody>${arr.map((x,i)=>`<tr><td>${i+1}</td><td dir="ltr"><b>${esc(x.no||'—')}</b></td><td>${esc(x.date||'—')}</td><td>${esc(x.due||'—')}</td><td>${esc(x.receiver||'—')}</td><td>${checkMoney(x.amount)}</td><td>${esc(x.bank||'—')}</td><td class="checkActions"><button class="secondary" type="button" onclick="showCheck('${x.id}')">👁️ نمایش</button><button class="danger" type="button" onclick="deleteCheck('${x.id}')">🗑️ حذف</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="checkEmpty">هنوز چکی در این بخش ثبت نشده است.</div>'}`);
 };
 
 window.newCheck=()=>{
-  openModal(`<div class="modalHead"><h2>ثبت چک</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-    <div><button class="primary" style="width:100%" type="button" onclick="openCheckForm('received')">ثبت چک های دریافتی</button>${checkList('received')}</div>
-    <div><button class="secondary" style="width:100%" type="button" onclick="openCheckForm('own')">ثبت چک های خودم</button>${checkList('own')}</div>
+  openModal(`<div class="modalHead"><div><h2>ثبت چک</h2><div style="font-size:12px;color:#71807b;margin-top:4px">یکی از دو نوع چک را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+  <div class="checkTypeGrid">
+    <div class="checkTypeCard"><div class="checkTypeIcon">💰</div><h3>ثبت چک های دریافتی</h3><p>چک‌هایی که از مشتریان یا دیگران دریافت می‌کنید</p><button class="primary" type="button" onclick="openCheckPage('received')">ورود و ثبت چک‌ها</button></div>
+    <div class="checkTypeCard"><div class="checkTypeIcon">🧾</div><h3>ثبت چک های خودم</h3><p>چک‌هایی که از طرف خودتان صادر می‌کنید</p><button class="secondary" type="button" onclick="openCheckPage('own')">ورود و ثبت چک‌ها</button></div>
   </div>`);
 };
+
+window.openCheckPage=type=>checkPage(type);
 
 window.openCheckForm=(type)=>{
   const received=type==='received';
   const title=received?'دریافت چک':'چک خودم';
-  const todayP=persianToday();
-  openModal(`<div class="modalHead"><h2>${title}</h2><button class="close" type="button" onclick="newCheck()">×</button></div>
-  <div class="form">
-    <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr"></div>
-    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="text" inputmode="numeric" value="${todayP}" placeholder="۱۴۰۵/۰۶/۲۶"></div>
-    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۷/۰۱"></div>
-    <div class="field"><label>${received?'دریافت کننده':'گیرنده'}</label><input id="checkReceiver" class="input" placeholder="انتخاب کنید"></div>
+  const label=received?'دریافت کننده':'گیرنده';
+  const today=isoToday();
+  openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">اطلاعات چک را کامل وارد کنید</div></div><button class="close" type="button" onclick="openCheckPage('${type}')">×</button></div>
+  <div class="checkFormGrid">
+    <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr" placeholder="مثلاً 1160-09-P9"></div>
+    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="date" value="${today}" onchange="document.getElementById('checkDateP').textContent='تاریخ شمسی: '+isoToPersian(this.value)"><small id="checkDateP" class="persianDateHint">تاریخ شمسی: ${isoToPersian(today)}</small></div>
+    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="date" onchange="document.getElementById('checkDueP').textContent='سررسید شمسی: '+isoToPersian(this.value)"><small id="checkDueP" class="persianDateHint">سررسید شمسی: انتخاب نشده</small></div>
+    <div class="field"><label>${label}</label><input id="checkReceiver" class="input" placeholder="نام ${label}"></div>
     <div class="field"><label>مبلغ</label><input id="checkAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
-    <div class="field"><label>بابت</label><input id="checkReason" class="input" placeholder="دلیل یا بابت چک"></div>
-    <div class="field"><label>بانک</label><input id="checkBank" class="input" placeholder="انتخاب کنید"></div>
-    <div class="field full"><label>توضیحات</label><textarea id="checkNote" class="input" rows="3" placeholder="توضیحات (اختیاری)"></textarea></div>
-  </div><br>
-  <button class="primary" onclick="saveCheck('${type}')">ثبت چک</button>`);
+    <div class="field"><label>بانک</label><input id="checkBank" class="input" placeholder="نام بانک"></div>
+    <div class="field full"><label>بابت</label><input id="checkReason" class="input" placeholder="دلیل یا بابت چک"></div>
+    <div class="field full"><label>توضیحات</label><textarea id="checkNote" class="input" rows="4" placeholder="توضیحات (اختیاری)"></textarea></div>
+  </div>
+  <div class="checkFormBottom"><button class="secondary" type="button" onclick="openCheckPage('${type}')">انصراف</button><button class="primary" type="button" onclick="saveCheck('${type}')">✓ ثبت چک</button></div>`);
 };
 
 window.saveCheck=(type)=>{
   const no=(document.getElementById('checkNo')?.value||'').trim();
-  const date=(document.getElementById('checkDate')?.value||'').trim();
-  const due=(document.getElementById('checkDue')?.value||'').trim();
+  const dateIso=(document.getElementById('checkDate')?.value||'').trim();
+  const dueIso=(document.getElementById('checkDue')?.value||'').trim();
+  const date=isoToPersian(dateIso), due=isoToPersian(dueIso);
   const receiver=(document.getElementById('checkReceiver')?.value||'').trim();
   const amount=Number(document.getElementById('checkAmount')?.value||0);
   const reason=(document.getElementById('checkReason')?.value||'').trim();
   const bank=(document.getElementById('checkBank')?.value||'').trim();
   const note=(document.getElementById('checkNote')?.value||'').trim();
   if(!no||!amount)return alert('شماره چک و مبلغ را وارد کنید.');
-  if(!validPersianDate(date)||!validPersianDate(due))return alert('تاریخ و سررسید را به صورت شمسی وارد کنید؛ مثال: ۱۴۰۵/۰۶/۲۶');
-  let checks=getChecks();
-  checks.unshift({id:Date.now().toString(),type,no,date,due,receiver,amount,reason,bank,note,createdAt:new Date().toISOString()});
-  localStorage.setItem('barfChecks',JSON.stringify(checks));
-  newCheck();
+  if(!dateIso||!dueIso)return alert('تاریخ و سررسید چک را انتخاب کنید.');
+  const checks=getChecks();
+  checks.push({id:Date.now().toString(),type,no,date,due,receiver,amount,reason,bank,note,createdAt:new Date().toISOString()});
+  setChecks(checks);
+  openCheckPage(type);
 };
 
-window.deleteCheck=(id)=>{
+window.showCheck=id=>{
+  const x=getChecks().find(c=>String(c.id)===String(id));
+  if(!x)return;
+  const typeTitle=x.type==='received'?'چک دریافتی':'چک خودم';
+  const receiverLabel=x.type==='received'?'دریافت کننده':'گیرنده';
+  openModal(`<div class="modalHead"><div><h2>جزئیات چک</h2><div style="font-size:12px;color:#71807b;margin-top:4px">${typeTitle}</div></div><button class="close" type="button" onclick="openCheckPage('${x.type}')">×</button></div>
+  <div class="checkDetailTable"><table><tbody>
+    <tr><th>شماره چک</th><td dir="ltr"><b>${esc(x.no||'—')}</b></td></tr>
+    <tr><th>تاریخ</th><td>${esc(x.date||'—')}</td></tr>
+    <tr><th>سررسید چک</th><td>${esc(x.due||'—')}</td></tr>
+    <tr><th>${receiverLabel}</th><td>${esc(x.receiver||'—')}</td></tr>
+    <tr><th>مبلغ</th><td><b>${checkMoney(x.amount)}</b></td></tr>
+    <tr><th>بابت</th><td>${esc(x.reason||'—')}</td></tr>
+    <tr><th>بانک</th><td>${esc(x.bank||'—')}</td></tr>
+    <tr><th>توضیحات</th><td>${esc(x.note||'—')}</td></tr>
+  </tbody></table></div>
+  <div class="checkFormBottom"><button class="danger" type="button" onclick="deleteCheck('${x.id}')">🗑️ حذف چک</button><button class="secondary" type="button" onclick="openCheckPage('${x.type}')">بازگشت</button></div>`);
+};
+
+window.deleteCheck=id=>{
   const checks=getChecks();
   const x=checks.find(c=>String(c.id)===String(id));
   if(!x)return;
   if(!confirm('آیا از حذف این چک اطمینان دارید؟'))return;
-  localStorage.setItem('barfChecks',JSON.stringify(checks.filter(c=>String(c.id)!==String(id))));
-  newCheck();
+  setChecks(checks.filter(c=>String(c.id)!==String(id)));
+  openCheckPage(x.type);
 };
 
 window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
