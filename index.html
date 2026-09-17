@@ -251,7 +251,8 @@ const dashboardCurrency=()=>"تومان"; const setDashboardCurrency=unit=>{}; c
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
 let currentPage="home";
-let appHistoryPushed=false;
+let barfBackLock=false;
+const homeUrl=()=>window.location.pathname+window.location.search;
 
 const nav=p=>{
   currentPage=p;
@@ -260,11 +261,21 @@ const nav=p=>{
   });
 };
 
+// یک نقطهٔ برگشت ثابت برای خانه می‌سازیم؛ دکمهٔ Back گوشی از هر صفحه به خانه می‌آید.
+function prepareHomeHistory(){
+  const u=homeUrl();
+  history.replaceState({barfHome:true,page:"home"},"",u);
+  history.pushState({barfApp:true,page:"home"},"",u);
+}
+
 window.addEventListener("popstate",()=>{
+  if(barfBackLock)return;
   if(currentPage!=="home"){
-    appHistoryPushed=false;
-    history.replaceState({page:"home"},"",window.location.pathname+window.location.search);
+    barfBackLock=true;
     render("home",false);
+    history.replaceState({barfHome:true,page:"home"},"",homeUrl());
+    history.pushState({barfApp:true,page:"home"},"",homeUrl());
+    barfBackLock=false;
   }
 });
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
@@ -368,7 +379,8 @@ async function start(){
    if(!currentUser){authScreen();return;}
    document.body.classList.remove("authMode");
    await loadData();
-   render("home");
+   prepareHomeHistory();
+   render("home",false);
  }catch(e){
    authScreen("خطا در بارگذاری: "+(e.message||e));
  }
@@ -388,15 +400,10 @@ function render(p,pushHistory=true){
  if(!currentUser)return authScreen();
 
  if(pushHistory && p!=="home"){
-   if(!appHistoryPushed){
-     history.pushState({page:p},"",window.location.pathname+window.location.search+"#"+p);
-     appHistoryPushed=true;
-   }else{
-     history.replaceState({page:p},"",window.location.pathname+window.location.search+"#"+p);
-   }
+   // همهٔ صفحات داخلی فقط یک قدم بعد از خانه هستند.
+   history.replaceState({barfApp:true,page:p},"",homeUrl()+"#"+p);
  }else if(p==="home" && pushHistory){
-   if(appHistoryPushed){ history.back(); return; }
-   history.replaceState({page:"home"},"",window.location.pathname+window.location.search);
+   prepareHomeHistory();
  }
 
  nav(p);
