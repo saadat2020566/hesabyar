@@ -415,7 +415,7 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
 </div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
- <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCustomer()">👤 مشتری جدید</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
+ <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
  <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
 
@@ -495,6 +495,50 @@ function closeModal(){document.getElementById("modal").classList.remove("open")}
 window.closeModal = closeModal;
 
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+
+window.newCheck=()=>{
+  openModal(`<div class="modalHead"><h2>ثبت چک</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <button class="primary" type="button" onclick="openCheckForm('received')">ثبت چک های دریافتی</button>
+    <button class="secondary" type="button" onclick="openCheckForm('own')">ثبت چک های خودم</button>
+  </div>`);
+};
+
+window.openCheckForm=(type)=>{
+  const received=type==='received';
+  const title=received?'دریافت چک':'چک خودم';
+  const key=received?'دریافتی':'خودم';
+  openModal(`<div class="modalHead"><h2>${title}</h2><button class="close" type="button" onclick="newCheck()">×</button></div>
+  <div class="form">
+    <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr"></div>
+    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="date"></div>
+    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="date"></div>
+    <div class="field"><label>${received?'دریافت کننده':'گیرنده'}</label><input id="checkReceiver" class="input" placeholder="انتخاب کنید"></div>
+    <div class="field"><label>مبلغ</label><input id="checkAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
+    <div class="field"><label>بابت</label><input id="checkReason" class="input" placeholder="دلیل یا بابت چک"></div>
+    <div class="field"><label>بانک</label><input id="checkBank" class="input" placeholder="انتخاب کنید"></div>
+    <div class="field full"><label>توضیحات</label><textarea id="checkNote" class="input" rows="3" placeholder="توضیحات (اختیاری)"></textarea></div>
+  </div><br>
+  <button class="primary" onclick="saveCheck('${type}')">ثبت چک</button>`);
+};
+
+window.saveCheck=(type)=>{
+  const no=(document.getElementById('checkNo')?.value||'').trim();
+  const date=document.getElementById('checkDate')?.value||'';
+  const due=document.getElementById('checkDue')?.value||'';
+  const receiver=(document.getElementById('checkReceiver')?.value||'').trim();
+  const amount=Number(document.getElementById('checkAmount')?.value||0);
+  const reason=(document.getElementById('checkReason')?.value||'').trim();
+  const bank=(document.getElementById('checkBank')?.value||'').trim();
+  const note=(document.getElementById('checkNote')?.value||'').trim();
+  if(!no||!amount)return alert('شماره چک و مبلغ را وارد کنید.');
+  let checks=[];
+  try{checks=JSON.parse(localStorage.getItem('barfChecks')||'[]')}catch(e){checks=[]}
+  checks.unshift({id:Date.now().toString(),type,no,date,due,receiver,amount,reason,bank,note,createdAt:new Date().toISOString()});
+  localStorage.setItem('barfChecks',JSON.stringify(checks));
+  closeModal();
+  alert('چک با موفقیت ثبت شد.');
+};
 
 window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
 window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("نام را وارد کنید");let r=await sb.from("customers").insert({user_id:currentUser.id,name,phone:np.value.trim(),address:na.value.trim(),debt:0,total_purchases:0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("customers")};
