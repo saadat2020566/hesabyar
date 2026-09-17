@@ -496,23 +496,33 @@ window.closeModal = closeModal;
 
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
 
+const persianToday=()=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const persianDigits=s=>String(s||'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+const validPersianDate=s=>/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(persianDigits(s).replace(/-/g,'/'));
+const getChecks=()=>{try{return JSON.parse(localStorage.getItem('barfChecks')||'[]')}catch(e){return[]}};
+const checkList=(type)=>{
+  const arr=getChecks().filter(x=>x.type===type);
+  if(!arr.length)return '<div style="color:#777;font-size:12px;padding:8px 2px">هنوز چکی ثبت نشده است.</div>';
+  return '<div style="margin-top:8px;display:grid;gap:8px">'+arr.map(x=>`<div class="section" style="margin:0;padding:10px;border:1px solid #e4ebe8"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="font-weight:700">شماره: ${esc(x.no||'—')}</div><div style="font-size:12px;color:#666;margin-top:4px">تاریخ: ${esc(x.date||'—')} | سررسید: ${esc(x.due||'—')}</div><div style="font-size:13px;margin-top:4px">مبلغ: ${Number(x.amount||0).toLocaleString('fa-IR')} تومان</div><div style="font-size:12px;color:#666;margin-top:4px">${esc(type==='received'?'دریافت کننده: ':'گیرنده: ')}${esc(x.receiver||'—')} | بانک: ${esc(x.bank||'—')}</div>${x.reason?`<div style="font-size:12px;color:#666;margin-top:4px">بابت: ${esc(x.reason)}</div>`:''}${x.note?`<div style="font-size:12px;color:#666;margin-top:4px">توضیحات: ${esc(x.note)}</div>`:''}</div><button class="danger" style="padding:7px 9px;font-size:11px;flex:none" onclick="deleteCheck('${x.id}')">🗑️ حذف</button></div></div>`).join('')+'</div>';
+};
+
 window.newCheck=()=>{
   openModal(`<div class="modalHead"><h2>ثبت چک</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-    <button class="primary" type="button" onclick="openCheckForm('received')">ثبت چک های دریافتی</button>
-    <button class="secondary" type="button" onclick="openCheckForm('own')">ثبت چک های خودم</button>
+    <div><button class="primary" style="width:100%" type="button" onclick="openCheckForm('received')">ثبت چک های دریافتی</button>${checkList('received')}</div>
+    <div><button class="secondary" style="width:100%" type="button" onclick="openCheckForm('own')">ثبت چک های خودم</button>${checkList('own')}</div>
   </div>`);
 };
 
 window.openCheckForm=(type)=>{
   const received=type==='received';
   const title=received?'دریافت چک':'چک خودم';
-  const key=received?'دریافتی':'خودم';
+  const todayP=persianToday();
   openModal(`<div class="modalHead"><h2>${title}</h2><button class="close" type="button" onclick="newCheck()">×</button></div>
   <div class="form">
     <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr"></div>
-    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="date"></div>
-    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="date"></div>
+    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="text" inputmode="numeric" value="${todayP}" placeholder="۱۴۰۵/۰۶/۲۶"></div>
+    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۷/۰۱"></div>
     <div class="field"><label>${received?'دریافت کننده':'گیرنده'}</label><input id="checkReceiver" class="input" placeholder="انتخاب کنید"></div>
     <div class="field"><label>مبلغ</label><input id="checkAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
     <div class="field"><label>بابت</label><input id="checkReason" class="input" placeholder="دلیل یا بابت چک"></div>
@@ -524,20 +534,28 @@ window.openCheckForm=(type)=>{
 
 window.saveCheck=(type)=>{
   const no=(document.getElementById('checkNo')?.value||'').trim();
-  const date=document.getElementById('checkDate')?.value||'';
-  const due=document.getElementById('checkDue')?.value||'';
+  const date=(document.getElementById('checkDate')?.value||'').trim();
+  const due=(document.getElementById('checkDue')?.value||'').trim();
   const receiver=(document.getElementById('checkReceiver')?.value||'').trim();
   const amount=Number(document.getElementById('checkAmount')?.value||0);
   const reason=(document.getElementById('checkReason')?.value||'').trim();
   const bank=(document.getElementById('checkBank')?.value||'').trim();
   const note=(document.getElementById('checkNote')?.value||'').trim();
   if(!no||!amount)return alert('شماره چک و مبلغ را وارد کنید.');
-  let checks=[];
-  try{checks=JSON.parse(localStorage.getItem('barfChecks')||'[]')}catch(e){checks=[]}
+  if(!validPersianDate(date)||!validPersianDate(due))return alert('تاریخ و سررسید را به صورت شمسی وارد کنید؛ مثال: ۱۴۰۵/۰۶/۲۶');
+  let checks=getChecks();
   checks.unshift({id:Date.now().toString(),type,no,date,due,receiver,amount,reason,bank,note,createdAt:new Date().toISOString()});
   localStorage.setItem('barfChecks',JSON.stringify(checks));
-  closeModal();
-  alert('چک با موفقیت ثبت شد.');
+  newCheck();
+};
+
+window.deleteCheck=(id)=>{
+  const checks=getChecks();
+  const x=checks.find(c=>String(c.id)===String(id));
+  if(!x)return;
+  if(!confirm('آیا از حذف این چک اطمینان دارید؟'))return;
+  localStorage.setItem('barfChecks',JSON.stringify(checks.filter(c=>String(c.id)!==String(id))));
+  newCheck();
 };
 
 window.newCustomer=()=>openModal(`<div class="modalHead"><h2>مشتری جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="nn" class="input"></div><div class="field"><label>موبایل</label><input id="np" class="input"></div><div class="field full"><label>آدرس</label><input id="na" class="input"></div></div><br><button class="primary" onclick="saveCustomer()">ثبت</button>`);
