@@ -456,13 +456,13 @@ function invoiceTable(a,emptyText="هنوز فاکتوری ثبت نشده اس�
  if(!a.length)return`<div class="card">${emptyText}</div>`;
  return`<div class="table"><table><thead><tr><th>شماره</th><th>طرف حساب</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${faNum(i.no)}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
-function newInvoiceChooser(){
+window.newInvoiceChooser=()=>{
  openModal(`<div class="modalHead"><div><h2>ثبت فاکتور</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع فاکتور را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
  <div class="checkTypeGrid">
-  <div class="checkTypeCard"><div class="checkTypeIcon">🧾</div><h3>فاکتور فروش</h3><p>برای ثبت فروش کالا به مشتری</p><button class="primary" type="button" onclick="newInvoice('sale')">ثبت فاکتور فروش</button></div>
-  <div class="checkTypeCard"><div class="checkTypeIcon">🛒</div><h3>فاکتور خرید</h3><p>برای ثبت خرید کالا از فروشنده</p><button class="secondary" type="button" onclick="newInvoice('purchase')">ثبت فاکتور خرید</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">🧾</div><h3>فاکتور فروش</h3><p>برای ثبت فروش کالا به مشتری</p><button class="primary" type="button" onclick="window.newInvoice('sale')">ثبت فاکتور فروش</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">🛒</div><h3>فاکتور خرید</h3><p>برای ثبت خرید کالا از فروشنده</p><button class="secondary" type="button" onclick="window.newInvoice('purchase')">ثبت فاکتور خرید</button></div>
  </div>`);
-}
+};
 function sales(){
  const sale=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
  const purchase=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
