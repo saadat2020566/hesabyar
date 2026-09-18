@@ -198,6 +198,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .checkDetailTable{border:1px solid #e0e8e5;border-radius:16px;overflow:hidden}.checkDetailTable table{width:100%;border-collapse:collapse}.checkDetailTable th,.checkDetailTable td{padding:13px;border-bottom:1px solid #e7ecea;text-align:right;font-size:13px}.checkDetailTable th{width:32%;background:#f5f8f7;color:#385049}.checkDetailTable tr:last-child th,.checkDetailTable tr:last-child td{border-bottom:0}
 @media(max-width:700px){.checkBox{padding:18px!important}.checkTypeGrid,.checkFormGrid{grid-template-columns:1fr}.checkFormGrid .full{grid-column:auto}.checkTypeCard{padding:18px}.checkTable{min-width:760px}}
 </style>
+
+<style>
+.cashFormGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.cashFormGrid .full{grid-column:1/-1}
+.cashListHead{display:flex;justify-content:flex-start;margin:10px 0 14px}.cashTableWrap{overflow:auto;border:1px solid #e1e9e6;border-radius:16px}.cashTable{width:100%;border-collapse:collapse;min-width:760px;background:#fff}.cashTable th,.cashTable td{padding:11px 9px;border-bottom:1px solid #e8eeec;text-align:center;font-size:12px}.cashTable th{background:#f3f7f5;font-weight:800;color:#29413a}.cashTable tr:last-child td{border-bottom:0}
+@media(max-width:700px){.cashFormGrid{grid-template-columns:1fr}.cashFormGrid .full{grid-column:auto}.cashListHead button{width:100%}}
+</style>
 </head>
 <style>
 #splash{
@@ -461,20 +467,73 @@ function render(p,pushHistory=true){
  ({home,sales,customers,products,finance,reports}[p]||home)();
 }
 
+const getCashDocuments=()=>{try{return JSON.parse(localStorage.getItem("barfCashDocuments")||"[]")}catch(e){return []}};
+const setCashDocuments=a=>localStorage.setItem("barfCashDocuments",JSON.stringify(a));
+window.newCashDocument=()=>{
+ openModal(`<div class="modalHead"><div><h2>ثبت اسناد نقدی</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع سند نقدی را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+ <div class="checkTypeGrid">
+  <div class="checkTypeCard"><div class="checkTypeIcon">↓</div><h3>دریافت نقدی</h3><p>ثبت وجه نقدی دریافتی</p><button class="primary" type="button" onclick="window.openCashDocumentForm('receive')">ثبت دریافت نقدی</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">↑</div><h3>پرداخت نقدی</h3><p>ثبت وجه نقدی پرداختی</p><button class="secondary" type="button" onclick="window.openCashDocumentForm('payment')">ثبت پرداخت نقدی</button></div>
+ </div>`);
+};
+window.openCashDocumentForm=(type)=>{
+ const title=type==='receive'?'ثبت دریافت نقدی':'ثبت پرداخت نقدی';
+ const personLabel=type==='receive'?'شخص دریافت‌کننده':'شخص پرداخت‌گیرنده';
+ openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">اطلاعات سند نقدی را وارد کنید</div></div><button class="close" type="button" onclick="window.newCashDocument()">×</button></div>
+ <div class="cashFormGrid">
+   <div class="field"><label>تاریخ</label><input id="cashDate" class="input" type="text" readonly value="${jalaliToday()}" onclick="openJalaliPicker('cashDate')"></div>
+   <div class="field"><label>شخص</label><input id="cashPerson" class="input" placeholder="نام شخص"></div>
+   <div class="field"><label>مبلغ</label><input id="cashAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
+   <div class="field"><label>بابت</label><input id="cashReason" class="input" placeholder="بابت"></div>
+   <div class="field full"><label>شرح</label><textarea id="cashNote" class="input" rows="4" placeholder="شرح سند (اختیاری)"></textarea></div>
+ </div>
+ <div class="checkFormBottom"><button class="secondary" type="button" onclick="window.newCashDocument()">انصراف</button><button class="primary" type="button" onclick="window.saveCashDocument('${type}')">✓ ثبت</button></div>`);
+};
+window.saveCashDocument=(type)=>{
+ const date=(document.getElementById('cashDate')?.value||'').trim();
+ const person=(document.getElementById('cashPerson')?.value||'').trim();
+ const amount=Number(document.getElementById('cashAmount')?.value||0);
+ const reason=(document.getElementById('cashReason')?.value||'').trim();
+ const note=(document.getElementById('cashNote')?.value||'').trim();
+ if(!date||!person||!amount||!reason)return alert('تاریخ، شخص، مبلغ و بابت را وارد کنید.');
+ const docs=getCashDocuments();
+ docs.push({id:Date.now().toString(),type,date,person,amount,reason,note,createdAt:new Date().toISOString()});
+ setCashDocuments(docs);
+ openCashDocumentPage(type);
+};
+window.openCashDocumentPage=(type)=>{
+ const docs=getCashDocuments().filter(x=>x.type===type).slice().reverse();
+ const title=type==='receive'?'دریافت‌های نقدی':'پرداخت‌های نقدی';
+ const empty=type==='receive'?'هنوز دریافت نقدی ثبت نشده است.':'هنوز پرداخت نقدی ثبت نشده است.';
+ const total=docs.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">${faNum(docs.length)} سند • ${money(total)}</div></div><button class="close" type="button" onclick="window.newCashDocument()">×</button></div>
+ <div class="cashListHead"><button class="primary" type="button" onclick="window.openCashDocumentForm('${type}')">+ ثبت ${type==='receive'?'دریافت':'پرداخت'} نقدی</button></div>
+ ${docs.length?`<div class="cashTableWrap"><table class="cashTable"><thead><tr><th>تاریخ</th><th>شخص</th><th>مبلغ</th><th>بابت</th><th>شرح</th><th>عملیات</th></tr></thead><tbody>${docs.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.person)}</td><td>${money(x.amount)}</td><td>${esc(x.reason)}</td><td>${esc(x.note||'—')}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="window.deleteCashDocument('${x.id}')">🗑️ حذف</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="checkEmpty">${empty}</div>`}`);
+};
+window.deleteCashDocument=(id)=>{
+ const docs=getCashDocuments(); const x=docs.find(a=>String(a.id)===String(id)); if(!x)return;
+ if(!confirm('آیا از حذف این سند نقدی اطمینان دارید؟'))return;
+ setCashDocuments(docs.filter(a=>String(a.id)!==String(id)));
+ window.openCashDocumentPage(x.type);
+};
 function home(){
  const saleInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
  const purchaseInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
  const receivedChecks=getChecks().filter(x=>x.type==="received");
  const ownChecks=getChecks().filter(x=>x.type==="own");
+ const cashDocs=getCashDocuments();
+ const receivedCashDocs=cashDocs.filter(x=>x.type==="receive");
+ const paymentCashDocs=cashDocs.filter(x=>x.type==="payment");
  const receivedCash= saleInvoices.filter(i=>(Number(i.paid)||0)>0);
- const receivedCashAmount=receivedCash.reduce((a,i)=>a+(Number(i.paid)||0),0);
+ const receivedCashAmount=receivedCash.reduce((a,i)=>a+(Number(i.paid)||0),0)+receivedCashDocs.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ const receivedCashCount=receivedCash.length+receivedCashDocs.length;
  const receivedCheckAmount=receivedChecks.reduce((a,x)=>a+(Number(x.amount)||0),0);
  const paymentCashInvoices=purchaseInvoices.filter(i=>(Number(i.paid)||0)>0);
  const paymentCashAmount=paymentCashInvoices.reduce((a,i)=>a+(Number(i.paid)||0),0);
  const expenseCash=data.expenses.filter(x=>Number(x.amount)||0);
  const expenseCashAmount=expenseCash.reduce((a,x)=>a+(Number(x.amount)||0),0);
- const paymentCashCount=paymentCashInvoices.length+expenseCash.length;
- const paymentCashTotal=paymentCashAmount+expenseCashAmount;
+ const paymentCashCount=paymentCashInvoices.length+expenseCash.length+paymentCashDocs.length;
+ const paymentCashTotal=paymentCashAmount+expenseCashAmount+paymentCashDocs.reduce((a,x)=>a+(Number(x.amount)||0),0);
  const receivedTotal=receivedCashAmount+receivedCheckAmount;
  const paymentTotal=paymentCashTotal+ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0);
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button></div></div>
@@ -482,7 +541,7 @@ function home(){
    <div class="moneyPanel receivedPanel">
      <div class="moneyPanelHead"><div><h2>دریافت‌ها</h2><div class="muted">جمع کل دریافت‌ها: ${money(receivedTotal)}</div></div><div class="moneyPanelIcon">↓</div></div>
      <div class="moneyRows">
-       <div class="moneyRow"><div><b>نقدی</b><span>${faNum(receivedCash.length)} مورد</span></div><strong>${money(receivedCashAmount)}</strong></div>
+       <div class="moneyRow"><div><b>نقدی</b><span>${faNum(receivedCashCount)} مورد</span></div><strong>${money(receivedCashAmount)}</strong></div>
        <div class="moneyRow"><div><b>چک</b><span>${faNum(receivedChecks.length)} مورد</span></div><strong>${money(receivedCheckAmount)}</strong></div>
      </div>
    </div>
@@ -494,7 +553,7 @@ function home(){
      </div>
    </div>
  </div>
- <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>`;
+ <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newCashDocument()">💵 ثبت اسناد نقدی</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>`;
 }
 
 function invoiceTable(a,emptyText="هنوز فاکتوری ثبت نشده است."){
