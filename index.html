@@ -469,12 +469,24 @@ function render(p,pushHistory=true){
 
 const getCashDocuments=()=>{try{return JSON.parse(localStorage.getItem("barfCashDocuments")||"[]")}catch(e){return []}};
 const setCashDocuments=a=>localStorage.setItem("barfCashDocuments",JSON.stringify(a));
+const cashDocumentListMarkup=(type)=>{
+ const docs=getCashDocuments().filter(x=>x.type===type).slice().reverse();
+ const isReceive=type==='receive';
+ const title=isReceive?'دریافت‌های نقدی':'پرداخت‌های نقدی';
+ const empty=isReceive?'هنوز دریافت نقدی ثبت نشده است.':'هنوز پرداخت نقدی ثبت نشده است.';
+ const total=docs.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ return `<div class="section" style="margin-top:18px"><div class="sectionTitle"><h2>${title}</h2><span style="font-size:12px;color:#71807b">${faNum(docs.length)} سند • ${money(total)}</span></div>
+ ${docs.length?`<div class="cashTableWrap"><table class="cashTable"><thead><tr><th>تاریخ</th><th>شخص</th><th>مبلغ</th><th>بابت</th><th>شرح</th><th>عملیات</th></tr></thead><tbody>${docs.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.person)}</td><td>${money(x.amount)}</td><td>${esc(x.reason)}</td><td>${esc(x.note||'—')}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="window.deleteCashDocument('${x.id}')">🗑️ حذف</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="checkEmpty">${empty}</div>`}</div>`;
+};
+
 window.newCashDocument=()=>{
- openModal(`<div class="modalHead"><div><h2>ثبت اسناد نقدی</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع سند نقدی را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+ openModal(`<div class="modalHead"><div><h2>ثبت اسناد نقدی</h2><div style="font-size:12px;color:#71807b;margin-top:4px">دریافت و پرداخت نقدی را جداگانه ثبت و مدیریت کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
  <div class="checkTypeGrid">
   <div class="checkTypeCard"><div class="checkTypeIcon">↓</div><h3>دریافت نقدی</h3><p>ثبت وجه نقدی دریافتی</p><button class="primary" type="button" onclick="window.openCashDocumentForm('receive')">ثبت دریافت نقدی</button></div>
   <div class="checkTypeCard"><div class="checkTypeIcon">↑</div><h3>پرداخت نقدی</h3><p>ثبت وجه نقدی پرداختی</p><button class="secondary" type="button" onclick="window.openCashDocumentForm('payment')">ثبت پرداخت نقدی</button></div>
- </div>`);
+ </div>
+ ${cashDocumentListMarkup('receive')}
+ ${cashDocumentListMarkup('payment')}`);
 };
 window.openCashDocumentForm=(type)=>{
  const title=type==='receive'?'ثبت دریافت نقدی':'ثبت پرداخت نقدی';
@@ -514,7 +526,7 @@ window.deleteCashDocument=(id)=>{
  const docs=getCashDocuments(); const x=docs.find(a=>String(a.id)===String(id)); if(!x)return;
  if(!confirm('آیا از حذف این سند نقدی اطمینان دارید؟'))return;
  setCashDocuments(docs.filter(a=>String(a.id)!==String(id)));
- window.openCashDocumentPage(x.type);
+ window.newCashDocument();
 };
 function home(){
  const saleInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
