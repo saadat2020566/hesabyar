@@ -26,16 +26,23 @@ main{flex:1;padding:22px;min-width:0}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid #e4ebe8;border-radius:16px;padding:16px}.label{font-size:12px;color:#78837f}.num{font-size:19px;font-weight:bold;margin-top:8px}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
 
-.dashboardFlow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-.moneyPanel{background:#fff;border:1px solid #e4ebe8;border-radius:18px;padding:18px}
-.moneyPanelHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.moneyPanelHead h2{margin:0;font-size:19px}
-.moneyPanelIcon{width:40px;height:40px;border-radius:12px;background:#e8f3f0;color:#176b5b;display:grid;place-items:center;font-size:24px;font-weight:bold}
-.moneyRows{border-top:1px solid #edf1ef}
-.moneyRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #edf1ef}
-.moneyRow:last-child{border-bottom:0}
-.moneyRow div{display:flex;flex-direction:column;gap:5px}.moneyRow span{font-size:11px;color:#7b8582}.moneyRow strong{font-size:16px;color:#176b5b}
-@media(max-width:800px){.dashboardFlow{grid-template-columns:1fr;gap:10px}.moneyPanel{padding:15px}}
+.dashboardFlow{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;direction:rtl}
+.moneyPanel{position:relative;background:linear-gradient(145deg,#ffffff 0%,#f7fbfa 100%);border:1px solid #dfeae6;border-radius:22px;padding:20px;box-shadow:0 8px 24px rgba(24,76,65,.07);overflow:hidden}
+.moneyPanel:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:#176b5b;border-radius:22px 0 0 22px}
+.paymentPanel:before{background:#6b7280}
+.moneyPanelHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.moneyPanelHead h2{margin:0;font-size:20px;font-weight:800}
+.moneyPanelHead .muted{margin-top:5px;font-size:11px}
+.moneyPanelIcon{width:46px;height:46px;border-radius:15px;background:#e7f4f0;color:#176b5b;display:grid;place-items:center;font-size:25px;font-weight:bold;box-shadow:inset 0 0 0 1px #d4e9e2}
+.paymentPanel .moneyPanelIcon{background:#eef1f0;color:#52605c;box-shadow:inset 0 0 0 1px #e1e6e4}
+.moneyRows{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:0}
+.moneyRow{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;padding:14px;border:1px solid #e5eeeb!important;border-radius:16px;background:#fff;min-height:88px;box-sizing:border-box}
+.moneyRow div{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+.moneyRow b{font-size:14px}
+.moneyRow span{font-size:10px;color:#7b8582;background:#f3f7f5;padding:4px 7px;border-radius:99px}
+.moneyRow strong{font-size:17px;color:#176b5b;white-space:nowrap}
+.paymentPanel .moneyRow strong{color:#37443f}
+@media(max-width:800px){.dashboardFlow{grid-template-columns:1fr;gap:10px}.moneyPanel{padding:15px}.moneyRows{grid-template-columns:1fr 1fr}}
 .section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}
 .table{overflow:auto;background:#fff;border:1px solid #e4ebe8;border-radius:15px}
 table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #edf1ef;text-align:right;font-size:12px;white-space:nowrap}th{color:#74807c;background:#fafcfc}
@@ -473,27 +480,26 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button></div></div>
  <div class="dashboardFlow">
    <div class="moneyPanel receivedPanel">
-     <div class="moneyPanelHead"><div><h2>دریافت‌ها</h2><div class="muted">جمع دریافتی‌ها: ${money(receivedTotal)}</div></div><div class="moneyPanelIcon">↓</div></div>
+     <div class="moneyPanelHead"><div><h2>دریافت‌ها</h2><div class="muted">جمع کل دریافت‌ها: ${money(receivedTotal)}</div></div><div class="moneyPanelIcon">↓</div></div>
      <div class="moneyRows">
-       <div class="moneyRow"><div><b>نقدی</b><span>تعداد: ${faNum(receivedCash.length)}</span></div><strong>${money(receivedCashAmount)}</strong></div>
-       <div class="moneyRow"><div><b>چک</b><span>تعداد: ${faNum(receivedChecks.length)}</span></div><strong>${money(receivedCheckAmount)}</strong></div>
+       <div class="moneyRow"><div><b>نقدی</b><span>${faNum(receivedCash.length)} مورد</span></div><strong>${money(receivedCashAmount)}</strong></div>
+       <div class="moneyRow"><div><b>چک</b><span>${faNum(receivedChecks.length)} مورد</span></div><strong>${money(receivedCheckAmount)}</strong></div>
      </div>
    </div>
    <div class="moneyPanel paymentPanel">
-     <div class="moneyPanelHead"><div><h2>پرداخت‌ها</h2><div class="muted">جمع پرداختی‌ها: ${money(paymentTotal)}</div></div><div class="moneyPanelIcon">↑</div></div>
+     <div class="moneyPanelHead"><div><h2>پرداخت‌ها</h2><div class="muted">جمع کل پرداخت‌ها: ${money(paymentTotal)}</div></div><div class="moneyPanelIcon">↑</div></div>
      <div class="moneyRows">
-       <div class="moneyRow"><div><b>نقدی</b><span>تعداد: ${faNum(paymentCashCount)}</span></div><strong>${money(paymentCashTotal)}</strong></div>
-       <div class="moneyRow"><div><b>چک</b><span>تعداد: ${faNum(ownChecks.length)}</span></div><strong>${money(ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0))}</strong></div>
+       <div class="moneyRow"><div><b>نقدی</b><span>${faNum(paymentCashCount)} مورد</span></div><strong>${money(paymentCashTotal)}</strong></div>
+       <div class="moneyRow"><div><b>چک</b><span>${faNum(ownChecks.length)} مورد</span></div><strong>${money(ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0))}</strong></div>
      </div>
    </div>
  </div>
- <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
- <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
+ <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>`;
 }
 
 function invoiceTable(a,emptyText="هنوز فاکتوری ثبت نشده است."){
  if(!a.length)return`<div class="card">${emptyText}</div>`;
- return`<div class="table"><table><thead><tr><th>شماره</th><th>طرف حساب</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${faNum(i.no)}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>طرف حساب</th><th>مبلغ</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${faNum(i.no)}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
 window.newInvoiceChooser=()=>{
  openModal(`<div class="modalHead"><div><h2>ثبت فاکتور</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع فاکتور را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
