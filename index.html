@@ -540,7 +540,8 @@ const checkMoney=n=>Number(n||0).toLocaleString('fa-IR')+' تومان';
 
 const jalaliMonthNames=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
 const jalaliWeekNames=['ش','ی','د','س','چ','پ','ج'];
-const jalaliToday=()=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).format(new Date()).replace(/-/g,'/');
+const faDigits=s=>String(s).replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[n]);
+const jalaliToday=()=>faDigits(new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/-/g,'/'));
 const jalaliParts=()=>{
   const a=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date());
   return {y:+a.find(x=>x.type==='year').value,m:+a.find(x=>x.type==='month').value,d:+a.find(x=>x.type==='day').value};
@@ -557,7 +558,7 @@ const jalaliWeekday=(y,m,d)=>((jalaliToDayIndex(y,m,d)+2)%7);
 let jalaliPickerState={y:0,m:0,target:'',selected:''};
 window.closeJalaliPicker=()=>{document.getElementById('jalaliPickerOverlay')?.remove()};
 window.selectJalaliDate=(y,m,d)=>{
-  const value=`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+  const value=faDigits(`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`);
   const el=document.getElementById(jalaliPickerState.target);
   if(el){el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));}
   closeJalaliPicker();
@@ -577,7 +578,7 @@ window.renderJalaliPicker=()=>{
     <div class="jalaliPickerHead"><button type="button" onclick="changeJalaliMonth(-1)">‹</button><div class="jalaliPickerTitle">${jalaliMonthNames[m-1]} ${String(y).replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[n])}</div><button type="button" onclick="changeJalaliMonth(1)">›</button></div>
     <div class="jalaliWeek">${jalaliWeekNames.map(x=>`<div>${x}</div>`).join('')}</div>
     <div class="jalaliGrid">${cells}</div>
-    <div class="jalaliPickerFoot"><span class="jalaliSelected">${selected?'انتخاب شده: '+selected:'یک تاریخ را انتخاب کنید'}</span><button type="button" class="jalaliTodayBtn" onclick="jalaliPickerToday()">امروز</button></div>
+    <div class="jalaliPickerFoot"><span class="jalaliSelected">${selected?'انتخاب شده: '+faDigits(selected):'یک تاریخ را انتخاب کنید'}</span><button type="button" class="jalaliTodayBtn" onclick="jalaliPickerToday()">امروز</button></div>
   </div>`;
 };
 window.changeJalaliMonth=delta=>{
@@ -631,8 +632,8 @@ window.openCheckForm=(type)=>{
   openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">اطلاعات چک را کامل وارد کنید</div></div><button class="close" type="button" onclick="openCheckPage('${type}')">×</button></div>
   <div class="checkFormGrid">
     <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr" placeholder="مثلاً 1160-09-P9"></div>
-    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="text" readonly value="${jalaliToday()}" onclick="openJalaliPicker('checkDate')" placeholder="انتخاب تاریخ"><small id="checkDateP" class="persianDateHint">📅 تقویم شمسی</small></div>
-    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="text" readonly value="" onclick="openJalaliPicker('checkDue')" placeholder="انتخاب سررسید"><small id="checkDueP" class="persianDateHint">📅 تقویم شمسی</small></div>
+    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="text" readonly value="${jalaliToday()}" onclick="openJalaliPicker('checkDate')" placeholder="انتخاب تاریخ"></div>
+    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="text" readonly value="" onclick="openJalaliPicker('checkDue')" placeholder="انتخاب سررسید"></div>
     <div class="field"><label>${label}</label><input id="checkReceiver" class="input" placeholder="نام ${label}"></div>
     <div class="field"><label>مبلغ</label><input id="checkAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
     <div class="field"><label>بانک</label><input id="checkBank" class="input" placeholder="نام بانک"></div>
