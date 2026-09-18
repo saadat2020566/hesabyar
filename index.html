@@ -252,7 +252,7 @@ if ("serviceWorker" in navigator) {
 <nav class="mobile">
 <button data-page="home" class="active">🏠<br>خانه</button>
 <button data-page="sales">🧾<br>فاکتور</button>
-<button onclick="window.newInvoiceChooser()" style="font-size:22px;color:#176b5b">＋</button>
+<button onclick="window.newInvoice('sale')" style="font-size:22px;color:#176b5b">＋</button>
 <button data-page="customers">👥<br>مشتری</button>
 <button data-page="products">📦<br>کالا</button>
 </nav>
@@ -448,7 +448,7 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
 </div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
- <div class="actions"><button class="primary" onclick="window.newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
+ <div class="actions"><button class="primary" onclick="window.newInvoice('sale')">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
  <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
 
@@ -715,7 +715,7 @@ let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 window._invoiceCurrency="تومان";
 
-openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="window.newInvoiceChooser()">×</button></div>
+openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
 <div class="field">
   <label>شماره فاکتور</label>
   <input
