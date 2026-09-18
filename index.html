@@ -252,7 +252,7 @@ if ("serviceWorker" in navigator) {
 <nav class="mobile">
 <button data-page="home" class="active">🏠<br>خانه</button>
 <button data-page="sales">🧾<br>فاکتور</button>
-<button onclick="window.newInvoice('sale')" style="font-size:22px;color:#176b5b">＋</button>
+<button onclick="newInvoiceChooser()" style="font-size:22px;color:#176b5b">＋</button>
 <button data-page="customers">👥<br>مشتری</button>
 <button data-page="products">📦<br>کالا</button>
 </nav>
@@ -448,7 +448,7 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
 </div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
- <div class="actions"><button class="primary" onclick="window.newInvoice('sale')">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
+ <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
  <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
 
@@ -456,12 +456,19 @@ function invoiceTable(a,emptyText="هنوز فاکتوری ثبت نشده اس�
  if(!a.length)return`<div class="card">${emptyText}</div>`;
  return`<div class="table"><table><thead><tr><th>شماره</th><th>طرف حساب</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${faNum(i.no)}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
+window.newInvoiceChooser=()=>{
+ openModal(`<div class="modalHead"><div><h2>ثبت فاکتور</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع فاکتور را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+ <div class="checkTypeGrid">
+  <div class="checkTypeCard"><div class="checkTypeIcon">🧾</div><h3>فاکتور فروش</h3><p>برای ثبت فروش کالا به مشتری</p><button class="primary" type="button" onclick="window.newInvoice('sale')">ثبت فاکتور فروش</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">🛒</div><h3>فاکتور خرید</h3><p>برای ثبت خرید کالا از فروشنده</p><button class="secondary" type="button" onclick="window.newInvoice('purchase')">ثبت فاکتور خرید</button></div>
+ </div>`);
+};
 function sales(){
  const sale=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
  const purchase=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
- main.innerHTML=`<div class="head"><h1>فاکتورها</h1></div>
- <div class="section"><div class="sectionTitle"><h2>فاکتورهای فروش</h2></div>${invoiceTable(sale,"هنوز فاکتور فروشی ثبت نشده است.")}</div>
- <div class="section"><div class="sectionTitle"><h2>فاکتورهای خرید</h2></div>${invoiceTable(purchase,"هنوز فاکتور خریدی ثبت نشده است.")}</div>`;
+ main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoiceChooser()">+ ثبت فاکتور</button></div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای فروش</h2><button class="primary" style="padding:8px 12px" onclick="newInvoice('sale')">+ فروش</button></div>${invoiceTable(sale,"هنوز فاکتور فروشی ثبت نشده است.")}</div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای خرید</h2><button class="secondary" style="padding:8px 12px" onclick="newInvoice('purchase')">+ خرید</button></div>${invoiceTable(purchase,"هنوز فاکتور خریدی ثبت نشده است.")}</div>`;
 }
 function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th><th>عملیات</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
 function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteCustomer('${c.id}')">🗑️ حذف</button></td></tr>`).join("")}
@@ -715,7 +722,7 @@ let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 window._invoiceCurrency="تومان";
 
-openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
+openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="newInvoiceChooser()">×</button></div>
 <div class="field">
   <label>شماره فاکتور</label>
   <input
