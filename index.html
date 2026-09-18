@@ -480,13 +480,11 @@ const cashDocumentListMarkup=(type)=>{
 };
 
 window.newCashDocument=()=>{
- openModal(`<div class="modalHead"><div><h2>ثبت اسناد نقدی</h2><div style="font-size:12px;color:#71807b;margin-top:4px">دریافت و پرداخت نقدی را جداگانه ثبت و مدیریت کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+ openModal(`<div class="modalHead"><div><h2>ثبت اسناد نقدی</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع سند نقدی را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
  <div class="checkTypeGrid">
-  <div class="checkTypeCard"><div class="checkTypeIcon">↓</div><h3>دریافت نقدی</h3><p>ثبت وجه نقدی دریافتی</p><button class="primary" type="button" onclick="window.openCashDocumentForm('receive')">ثبت دریافت نقدی</button></div>
-  <div class="checkTypeCard"><div class="checkTypeIcon">↑</div><h3>پرداخت نقدی</h3><p>ثبت وجه نقدی پرداختی</p><button class="secondary" type="button" onclick="window.openCashDocumentForm('payment')">ثبت پرداخت نقدی</button></div>
- </div>
- ${cashDocumentListMarkup('receive')}
- ${cashDocumentListMarkup('payment')}`);
+  <div class="checkTypeCard"><div class="checkTypeIcon">↓</div><h3>دریافت نقدی</h3><p>ثبت و مشاهده دریافت‌های نقدی</p><button class="primary" type="button" onclick="window.openCashDocumentPage('receive')">ثبت دریافت نقدی</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">↑</div><h3>پرداخت نقدی</h3><p>ثبت و مشاهده پرداخت‌های نقدی</p><button class="secondary" type="button" onclick="window.openCashDocumentPage('payment')">ثبت پرداخت نقدی</button></div>
+ </div>`);
 };
 window.openCashDocumentForm=(type)=>{
  const title=type==='receive'?'ثبت دریافت نقدی':'ثبت پرداخت نقدی';
@@ -526,7 +524,7 @@ window.deleteCashDocument=(id)=>{
  const docs=getCashDocuments(); const x=docs.find(a=>String(a.id)===String(id)); if(!x)return;
  if(!confirm('آیا از حذف این سند نقدی اطمینان دارید؟'))return;
  setCashDocuments(docs.filter(a=>String(a.id)!==String(id)));
- window.newCashDocument();
+ window.openCashDocumentPage(x.type);
 };
 function home(){
  const saleInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
