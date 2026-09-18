@@ -39,6 +39,22 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
 .linkBtn{display:block;width:100%;border:0;background:transparent;color:#1976d2;font-family:inherit;font-size:13px;padding:10px 4px;cursor:pointer;text-align:center}
 .linkBtn:hover{text-decoration:underline}
+
+.jalaliPickerOverlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}
+.jalaliPicker{width:min(380px,94vw);background:#fff;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.22);padding:18px;direction:rtl}
+.jalaliPickerHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.jalaliPickerHead button{border:0;background:#f1f5f4;border-radius:12px;width:42px;height:42px;font-size:20px;cursor:pointer}
+.jalaliPickerTitle{text-align:center;font-weight:800;font-size:18px;flex:1}
+.jalaliWeek,.jalaliGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.jalaliWeek div{text-align:center;font-size:12px;color:#71807b;padding:6px 0}
+.jalaliDay{border:0;background:#f6f8f7;border-radius:11px;min-height:40px;font-size:14px;cursor:pointer}
+.jalaliDay:hover{background:#dff3ed}
+.jalaliDay.today{outline:2px solid #1c8d78;background:#e7f7f2}
+.jalaliDay.empty{background:transparent;cursor:default}
+.jalaliPickerFoot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px}
+.jalaliSelected{font-size:12px;color:#176b5b;font-weight:700}
+.jalaliTodayBtn{border:0;background:#e8f5f1;color:#176b5b;border-radius:10px;padding:9px 13px;font-weight:700;cursor:pointer}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -521,6 +537,66 @@ const isoToPersian=iso=>{if(!iso)return '';const d=new Date(iso+'T12:00:00');ret
 const checkSort=(a,b)=>String(a.no||'').localeCompare(String(b.no||''),'fa',{numeric:true,sensitivity:'base'});
 const checkMoney=n=>Number(n||0).toLocaleString('fa-IR')+' تومان';
 
+
+const jalaliMonthNames=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const jalaliWeekNames=['ش','ی','د','س','چ','پ','ج'];
+const jalaliToday=()=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).format(new Date()).replace(/-/g,'/');
+const jalaliParts=()=>{
+  const a=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date());
+  return {y:+a.find(x=>x.type==='year').value,m:+a.find(x=>x.type==='month').value,d:+a.find(x=>x.type==='day').value};
+};
+const jalaliLeap=y=>[1,5,9,13,17,22,26,30].includes((y+12)%33);
+const jalaliMonthDays=(y,m)=>m<=6?31:m<=11?30:(jalaliLeap(y)?30:29);
+const jalaliToDayIndex=(y,m,d)=>{
+  const gy=y-1;
+  let days=(gy*365)+Math.floor((gy+3)/4)-Math.floor((gy+99)/100)+Math.floor((gy+399)/400);
+  days+=(m<=7?(m-1)*31:(m-1)*30-6)+d;
+  return days;
+};
+const jalaliWeekday=(y,m,d)=>((jalaliToDayIndex(y,m,d)+2)%7);
+let jalaliPickerState={y:0,m:0,target:'',selected:''};
+window.closeJalaliPicker=()=>{document.getElementById('jalaliPickerOverlay')?.remove()};
+window.selectJalaliDate=(y,m,d)=>{
+  const value=`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+  const el=document.getElementById(jalaliPickerState.target);
+  if(el){el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));}
+  closeJalaliPicker();
+};
+window.renderJalaliPicker=()=>{
+  const o=document.getElementById('jalaliPickerOverlay'); if(!o)return;
+  const y=jalaliPickerState.y,m=jalaliPickerState.m,selected=jalaliPickerState.selected;
+  const first=jalaliWeekday(y,m,1),count=jalaliMonthDays(y,m);
+  let cells='';
+  for(let i=0;i<first;i++)cells+='<button class="jalaliDay empty" tabindex="-1"></button>';
+  for(let d=1;d<=count;d++){
+    const v=`${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+    const cls=v===selected?' today':'';
+    cells+=`<button type="button" class="jalaliDay${cls}" onclick="selectJalaliDate(${y},${m},${d})">${String(d).replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[n])}</button>`;
+  }
+  o.innerHTML=`<div class="jalaliPicker" role="dialog" aria-modal="true">
+    <div class="jalaliPickerHead"><button type="button" onclick="changeJalaliMonth(-1)">‹</button><div class="jalaliPickerTitle">${jalaliMonthNames[m-1]} ${String(y).replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[n])}</div><button type="button" onclick="changeJalaliMonth(1)">›</button></div>
+    <div class="jalaliWeek">${jalaliWeekNames.map(x=>`<div>${x}</div>`).join('')}</div>
+    <div class="jalaliGrid">${cells}</div>
+    <div class="jalaliPickerFoot"><span class="jalaliSelected">${selected?'انتخاب شده: '+selected:'یک تاریخ را انتخاب کنید'}</span><button type="button" class="jalaliTodayBtn" onclick="jalaliPickerToday()">امروز</button></div>
+  </div>`;
+};
+window.changeJalaliMonth=delta=>{
+  jalaliPickerState.m+=delta;
+  if(jalaliPickerState.m<1){jalaliPickerState.m=12;jalaliPickerState.y--}
+  if(jalaliPickerState.m>12){jalaliPickerState.m=1;jalaliPickerState.y++}
+  renderJalaliPicker();
+};
+window.jalaliPickerToday=()=>{const t=jalaliParts();jalaliPickerState.y=t.y;jalaliPickerState.m=t.m;renderJalaliPicker()};
+window.openJalaliPicker=target=>{
+  const el=document.getElementById(target);const current=(el?.value||'').replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+  let [y,m,d]=current.split('/').map(Number);const t=jalaliParts();
+  if(!y||!m||!d){y=t.y;m=t.m;d=t.d}
+  jalaliPickerState={y,m,target,selected:current||`${t.y}/${String(t.m).padStart(2,'0')}/${String(t.d).padStart(2,'0')}`};
+  let o=document.getElementById('jalaliPickerOverlay');
+  if(!o){o=document.createElement('div');o.id='jalaliPickerOverlay';o.className='jalaliPickerOverlay';o.onclick=e=>{if(e.target===o)closeJalaliPicker()};document.body.appendChild(o)}
+  renderJalaliPicker();
+};
+
 const checkList=(type)=>{
   const arr=getChecks().filter(x=>x.type===type).sort(checkSort);
   if(!arr.length)return '<div class="checkEmpty">هنوز چکی ثبت نشده است.</div>';
@@ -555,8 +631,8 @@ window.openCheckForm=(type)=>{
   openModal(`<div class="modalHead"><div><h2>${title}</h2><div style="font-size:12px;color:#71807b;margin-top:4px">اطلاعات چک را کامل وارد کنید</div></div><button class="close" type="button" onclick="openCheckPage('${type}')">×</button></div>
   <div class="checkFormGrid">
     <div class="field"><label>شماره چک</label><input id="checkNo" class="input" value="1160-09-P9" dir="ltr" placeholder="مثلاً 1160-09-P9"></div>
-    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="date" value="${today}" onchange="document.getElementById('checkDateP').textContent='تاریخ شمسی: '+isoToPersian(this.value)"><small id="checkDateP" class="persianDateHint">تاریخ شمسی: ${isoToPersian(today)}</small></div>
-    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="date" onchange="document.getElementById('checkDueP').textContent='سررسید شمسی: '+isoToPersian(this.value)"><small id="checkDueP" class="persianDateHint">سررسید شمسی: انتخاب نشده</small></div>
+    <div class="field"><label>تاریخ</label><input id="checkDate" class="input" type="text" readonly value="${jalaliToday()}" onclick="openJalaliPicker('checkDate')" placeholder="انتخاب تاریخ"><small id="checkDateP" class="persianDateHint">📅 تقویم شمسی</small></div>
+    <div class="field"><label>سررسید چک</label><input id="checkDue" class="input" type="text" readonly value="" onclick="openJalaliPicker('checkDue')" placeholder="انتخاب سررسید"><small id="checkDueP" class="persianDateHint">📅 تقویم شمسی</small></div>
     <div class="field"><label>${label}</label><input id="checkReceiver" class="input" placeholder="نام ${label}"></div>
     <div class="field"><label>مبلغ</label><input id="checkAmount" class="input" type="number" inputmode="numeric" placeholder="مبلغ را وارد کنید"></div>
     <div class="field"><label>بانک</label><input id="checkBank" class="input" placeholder="نام بانک"></div>
@@ -568,16 +644,15 @@ window.openCheckForm=(type)=>{
 
 window.saveCheck=(type)=>{
   const no=(document.getElementById('checkNo')?.value||'').trim();
-  const dateIso=(document.getElementById('checkDate')?.value||'').trim();
-  const dueIso=(document.getElementById('checkDue')?.value||'').trim();
-  const date=isoToPersian(dateIso), due=isoToPersian(dueIso);
+  const date=(document.getElementById('checkDate')?.value||'').trim();
+  const due=(document.getElementById('checkDue')?.value||'').trim();
   const receiver=(document.getElementById('checkReceiver')?.value||'').trim();
   const amount=Number(document.getElementById('checkAmount')?.value||0);
   const reason=(document.getElementById('checkReason')?.value||'').trim();
   const bank=(document.getElementById('checkBank')?.value||'').trim();
   const note=(document.getElementById('checkNote')?.value||'').trim();
   if(!no||!amount)return alert('شماره چک و مبلغ را وارد کنید.');
-  if(!dateIso||!dueIso)return alert('تاریخ و سررسید چک را انتخاب کنید.');
+  if(!date||!due)return alert('تاریخ و سررسید چک را انتخاب کنید.');
   const checks=getChecks();
   checks.push({id:Date.now().toString(),type,no,date,due,receiver,amount,reason,bank,note,createdAt:new Date().toISOString()});
   setChecks(checks);
