@@ -25,6 +25,17 @@ main{flex:1;padding:22px;min-width:0}
 .danger{background:#fde8e8;color:#c53030}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid #e4ebe8;border-radius:16px;padding:16px}.label{font-size:12px;color:#78837f}.num{font-size:19px;font-weight:bold;margin-top:8px}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+
+.dashboardFlow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.moneyPanel{background:#fff;border:1px solid #e4ebe8;border-radius:18px;padding:18px}
+.moneyPanelHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.moneyPanelHead h2{margin:0;font-size:19px}
+.moneyPanelIcon{width:40px;height:40px;border-radius:12px;background:#e8f3f0;color:#176b5b;display:grid;place-items:center;font-size:24px;font-weight:bold}
+.moneyRows{border-top:1px solid #edf1ef}
+.moneyRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #edf1ef}
+.moneyRow:last-child{border-bottom:0}
+.moneyRow div{display:flex;flex-direction:column;gap:5px}.moneyRow span{font-size:11px;color:#7b8582}.moneyRow strong{font-size:16px;color:#176b5b}
+@media(max-width:800px){.dashboardFlow{grid-template-columns:1fr;gap:10px}.moneyPanel{padding:15px}}
 .section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}
 .table{overflow:auto;background:#fff;border:1px solid #e4ebe8;border-radius:15px}
 table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #edf1ef;text-align:right;font-size:12px;white-space:nowrap}th{color:#74807c;background:#fafcfc}
@@ -444,10 +455,38 @@ function render(p,pushHistory=true){
 }
 
 function home(){
- const debt=data.invoices.reduce((a,i)=>a+(Number(i.remaining)||0),0),ex=data.expenses.reduce((a,c)=>a+c.amount,0),ii=data.invoices.filter(i=>i.date===today()),s=ii.reduce((a,i)=>a+i.total,0),pa=ii.reduce((a,i)=>a+i.paid,0);
- main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
-</div></div>
- <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
+ const saleInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
+ const purchaseInvoices=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
+ const receivedChecks=getChecks().filter(x=>x.type==="received");
+ const ownChecks=getChecks().filter(x=>x.type==="own");
+ const receivedCash= saleInvoices.filter(i=>(Number(i.paid)||0)>0);
+ const receivedCashAmount=receivedCash.reduce((a,i)=>a+(Number(i.paid)||0),0);
+ const receivedCheckAmount=receivedChecks.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ const paymentCashInvoices=purchaseInvoices.filter(i=>(Number(i.paid)||0)>0);
+ const paymentCashAmount=paymentCashInvoices.reduce((a,i)=>a+(Number(i.paid)||0),0);
+ const expenseCash=data.expenses.filter(x=>Number(x.amount)||0);
+ const expenseCashAmount=expenseCash.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ const paymentCashCount=paymentCashInvoices.length+expenseCash.length;
+ const paymentCashTotal=paymentCashAmount+expenseCashAmount;
+ const receivedTotal=receivedCashAmount+receivedCheckAmount;
+ const paymentTotal=paymentCashTotal+ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0);
+ main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button></div></div>
+ <div class="dashboardFlow">
+   <div class="moneyPanel receivedPanel">
+     <div class="moneyPanelHead"><div><h2>دریافت‌ها</h2><div class="muted">جمع دریافتی‌ها: ${money(receivedTotal)}</div></div><div class="moneyPanelIcon">↓</div></div>
+     <div class="moneyRows">
+       <div class="moneyRow"><div><b>نقدی</b><span>تعداد: ${faNum(receivedCash.length)}</span></div><strong>${money(receivedCashAmount)}</strong></div>
+       <div class="moneyRow"><div><b>چک</b><span>تعداد: ${faNum(receivedChecks.length)}</span></div><strong>${money(receivedCheckAmount)}</strong></div>
+     </div>
+   </div>
+   <div class="moneyPanel paymentPanel">
+     <div class="moneyPanelHead"><div><h2>پرداخت‌ها</h2><div class="muted">جمع پرداختی‌ها: ${money(paymentTotal)}</div></div><div class="moneyPanelIcon">↑</div></div>
+     <div class="moneyRows">
+       <div class="moneyRow"><div><b>نقدی</b><span>تعداد: ${faNum(paymentCashCount)}</span></div><strong>${money(paymentCashTotal)}</strong></div>
+       <div class="moneyRow"><div><b>چک</b><span>تعداد: ${faNum(ownChecks.length)}</span></div><strong>${money(ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0))}</strong></div>
+     </div>
+   </div>
+ </div>
  <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
  <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
