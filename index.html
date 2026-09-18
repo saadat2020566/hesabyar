@@ -466,9 +466,9 @@ window.newInvoiceChooser=()=>{
 function sales(){
  const sale=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
  const purchase=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
- main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoiceChooser()">+ ثبت فاکتور</button></div>
- <div class="section"><div class="sectionTitle"><h2>فاکتورهای فروش</h2><button class="primary" style="padding:8px 12px" onclick="newInvoice('sale')">+ فروش</button></div>${invoiceTable(sale,"هنوز فاکتور فروشی ثبت نشده است.")}</div>
- <div class="section"><div class="sectionTitle"><h2>فاکتورهای خرید</h2><button class="secondary" style="padding:8px 12px" onclick="newInvoice('purchase')">+ خرید</button></div>${invoiceTable(purchase,"هنوز فاکتور خریدی ثبت نشده است.")}</div>`;
+ main.innerHTML=`<div class="head"><h1>فاکتورها</h1></div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای فروش</h2></div>${invoiceTable(sale,"هنوز فاکتور فروشی ثبت نشده است.")}</div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای خرید</h2></div>${invoiceTable(purchase,"هنوز فاکتور خریدی ثبت نشده است.")}</div>`;
 }
 function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th><th>عملیات</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
 function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteCustomer('${c.id}')">🗑️ حذف</button></td></tr>`).join("")}
