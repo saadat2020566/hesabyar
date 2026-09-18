@@ -252,7 +252,7 @@ if ("serviceWorker" in navigator) {
 <nav class="mobile">
 <button data-page="home" class="active">🏠<br>خانه</button>
 <button data-page="sales">🧾<br>فاکتور</button>
-<button onclick="newInvoice()" style="font-size:22px;color:#176b5b">＋</button>
+<button onclick="newInvoiceChooser()" style="font-size:22px;color:#176b5b">＋</button>
 <button data-page="customers">👥<br>مشتری</button>
 <button data-page="products">📦<br>کالا</button>
 </nav>
@@ -277,6 +277,8 @@ const fromToman=(amount,unit)=>Number(amount||0)*currencyFactor(unit);
 const getInvoiceCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
 const setInvoiceCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfInvoiceCurrencies",JSON.stringify(m));};
 const getExpenseCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
+const getInvoiceType=id=>{try{return (JSON.parse(localStorage.getItem("barfInvoiceTypes")||"{}"))[id]||"sale"}catch(e){return "sale"}};
+const setInvoiceType=(id,type)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceTypes")||"{}")}catch(e){}m[id]=type;localStorage.setItem("barfInvoiceTypes",JSON.stringify(m));};
 const setExpenseCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfExpenseCurrencies",JSON.stringify(m));};
 const dashboardCurrency=()=>"تومان"; const setDashboardCurrency=unit=>{}; const dashboardMoney=n=>money(Number(n)||0,"تومان"); const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -446,16 +448,28 @@ function home(){
  main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button>
 </div></div>
  <div class="cards">${metric("فروش امروز",money(s),"فاکتورها")}${metric("دریافت امروز",money(pa),"پرداخت‌ها")}${metric("طلب مشتریان",money(debt),"مانده حساب")}${metric("هزینه‌ها",money(ex),"هزینه‌ها")}</div>
- <div class="actions"><button class="primary" onclick="newInvoice()">🧾 فاکتور جدید</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
+ <div class="actions"><button class="primary" onclick="newInvoiceChooser()">🧾 ثبت فاکتور</button><button class="secondary" onclick="newCheck()">🧾 ثبت چک</button><button class="secondary" onclick="newProduct()">📦 محصول جدید</button><button class="secondary" onclick="window.finance()">💰 ثبت هزینه</button></div>
  <div class="section"><div class="sectionTitle"><h2>آخرین فاکتورها</h2><button class="secondary" onclick="render('sales')">همه</button></div>${invoiceTable(data.invoices.slice(0,5))}</div>`;
 }
 
-function invoiceTable(a){
- if(!a.length)return'<div class="card">هنوز فاکتوری ثبت نشده است.</div>';
- return`<div class="table"><table><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${i.no}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش فاکتور</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
+function invoiceTable(a,emptyText="هنوز فاکتوری ثبت نشده است."){
+ if(!a.length)return`<div class="card">${emptyText}</div>`;
+ return`<div class="table"><table><thead><tr><th>شماره</th><th>طرف حساب</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead><tbody>${a.map(i=>`<tr><td>#${faNum(i.no)}</td><td>${esc(i.customer)}</td><td>${money(fromToman(i.total,getInvoiceCurrency(i.id)),getInvoiceCurrency(i.id))}</td><td>${i.remaining?'<span class="badge warn">بدهکار</span>':'<span class="badge">تسویه</span>'}</td><td>${i.date}</td><td><button class="secondary" style="padding:6px 10px;font-size:11px" onclick="showInvoice('${i.id}')">👁️ نمایش</button> <button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteInvoice('${i.id}')">🗑️ حذف</button></td></tr>`).join("")}</tbody></table></div>`;
 }
-
-function sales(){main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoice()">+ فاکتور جدید</button></div>${invoiceTable(data.invoices)}`}
+function newInvoiceChooser(){
+ openModal(`<div class="modalHead"><div><h2>ثبت فاکتور</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نوع فاکتور را انتخاب کنید</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+ <div class="checkTypeGrid">
+  <div class="checkTypeCard"><div class="checkTypeIcon">🧾</div><h3>فاکتور فروش</h3><p>برای ثبت فروش کالا به مشتری</p><button class="primary" type="button" onclick="newInvoice('sale')">ثبت فاکتور فروش</button></div>
+  <div class="checkTypeCard"><div class="checkTypeIcon">🛒</div><h3>فاکتور خرید</h3><p>برای ثبت خرید کالا از فروشنده</p><button class="secondary" type="button" onclick="newInvoice('purchase')">ثبت فاکتور خرید</button></div>
+ </div>`);
+}
+function sales(){
+ const sale=data.invoices.filter(i=>getInvoiceType(i.id)==="sale");
+ const purchase=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase");
+ main.innerHTML=`<div class="head"><h1>فاکتورها</h1><button class="primary" onclick="newInvoiceChooser()">+ ثبت فاکتور</button></div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای فروش</h2><button class="primary" style="padding:8px 12px" onclick="newInvoice('sale')">+ فروش</button></div>${invoiceTable(sale,"هنوز فاکتور فروشی ثبت نشده است.")}</div>
+ <div class="section"><div class="sectionTitle"><h2>فاکتورهای خرید</h2><button class="secondary" style="padding:8px 12px" onclick="newInvoice('purchase')">+ خرید</button></div>${invoiceTable(purchase,"هنوز فاکتور خریدی ثبت نشده است.")}</div>`;
+}
 function customers(){main.innerHTML=`<div class="head"><h1>مشتریان</h1><button class="primary" onclick="newCustomer()">+ مشتری جدید</button></div><input id="cq" class="input" placeholder="جستجو..." oninput="filterCustomers()"><div class="table"><table><thead><tr><th>نام</th><th>تلفن</th><th>خرید کل</th><th>بدهی</th><th>عملیات</th></tr></thead><tbody id="cr"></tbody></table></div>`;filterCustomers()}
 function filterCustomers(){let q=document.getElementById("cq")?.value||"",a=data.customers.filter(c=>(c.name+" "+c.phone).includes(q));document.getElementById("cr").innerHTML=a.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${money(c.purchases)}</td><td>${money(c.debt)}</td><td><button class="danger" style="padding:6px 10px;font-size:11px" onclick="deleteCustomer('${c.id}')">🗑️ حذف</button></td></tr>`).join("")}
 window.deleteCustomer=async id=>{
@@ -697,14 +711,18 @@ window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("ن�
 window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>واحد پول</label><select id="expenseCurrency" class="input"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
 window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,unit=document.getElementById("expenseCurrency")?.value||"تومان";if(!title||!inputAmount)return alert("عنوان و مبلغ را وارد کنید");let amount=toToman(inputAmount,unit);let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()}).select().single();if(r.error)return alert(r.error.message);setExpenseCurrency(r.data.id,unit);await loadData();closeModal();render("finance")};
 
-window.newInvoice=()=>{
+window.newInvoice=(invoiceType="sale")=>{
 currentInvoiceItems=[];
+window._invoiceType=invoiceType;
+const isPurchase=invoiceType==="purchase";
+const invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
+const partyLabel=isPurchase?"فروشنده":"مشتری";
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
 let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 window._invoiceCurrency="تومان";
 
-openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div>
+openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="newInvoiceChooser()">×</button></div>
 <div class="field">
   <label>شماره فاکتور</label>
   <input
@@ -732,7 +750,7 @@ openModal(`<div class="modalHead"><h2>فاکتور جدید</h2><button class="c
   >
 </div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
-  <div class="field full"><label>مشتری</label><select id="ic" class="input"><option value="">متفرقه</option>${opts}</select></div>
+  <div class="field full"><label>${partyLabel}</label><select id="ic" class="input"><option value="">${isPurchase?"فروشنده متفرقه":"مشتری متفرقه"}</option>${opts}</select></div>
 <div class="field full"><label>واحد پول</label><select id="invoiceCurrency" class="input" onchange="updateInvoiceCurrency()"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div>
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
@@ -742,7 +760,7 @@ updateInvoiceTotals();
 };
 
 window.openAddItemModal=()=>{
-let unit=currencyUnit();let opts=data.products.map(p=>`<option value="${p.id}" data-price="${fromToman(p.sell,unit)}">${esc(p.name)} (${money(fromToman(p.sell,unit),unit)})</option>`).join("");
+let unit=currencyUnit();let purchase=window._invoiceType==="purchase";let opts=data.products.map(p=>{let price=purchase?p.buy:p.sell;return `<option value="${p.id}" data-price="${fromToman(price,unit)}">${esc(p.name)} (${money(fromToman(price,unit),unit)})</option>`}).join("");
 document.getElementById("subBox").innerHTML=`
 <div class="modalHead"><h2>افزودن محصول به فاکتور</h2><button class="close" type="button" onclick="closeSubModal()">×</button></div>
 <div class="field full"><label>نوع کالا</label><input id="subProdName" class="input"></div>
@@ -867,6 +885,7 @@ function faToEnDigits(value){
 
 let no=+faToEnDigits(document.getElementById("invoiceNo").value)||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
 let invoiceDate=document.getElementById("invDate").value;
+let invoiceType=window._invoiceType||"sale";
 
 let inv=await sb.from("invoices").insert({
   user_id:currentUser.id,
@@ -902,13 +921,15 @@ if(ir.error){await sb.from("invoices").delete().eq("id",inv.data.id);return aler
 
 for(const x of currentInvoiceItems){
   if(x.p.id){
-    await sb.from("products").update({stock:x.p.stock-x.q}).eq("id",x.p.id).eq("user_id",currentUser.id);
+    const newStock=invoiceType==="purchase" ? x.p.stock+x.q : x.p.stock-x.q;
+    await sb.from("products").update({stock:newStock}).eq("id",x.p.id).eq("user_id",currentUser.id);
   }
 }
-if(c){
+if(c && invoiceType==="sale"){
   await sb.from("customers").update({total_purchases:c.purchases+dbTotal,debt:c.debt+dbRemaining}).eq("id",c.id).eq("user_id",currentUser.id);
 }
 setInvoiceCurrency(inv.data.id,invoiceUnit);
+setInvoiceType(inv.data.id,invoiceType);
 await loadData();closeModal();showInvoice(inv.data.id);
 };
 
@@ -916,6 +937,10 @@ window.showInvoice=async id=>{
 let i=data.invoices.find(x=>String(x.id)===String(id));
 if(!i) return alert("خطا! فاکتور یافت نشد.");
 let invoiceUnit=getInvoiceCurrency(i.id);
+let invoiceType=getInvoiceType(i.id);
+let isPurchase=invoiceType==="purchase";
+let invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
+let partyLabel=isPurchase?"فروشنده":"مشتری";
 let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
 if(r.error)return alert(r.error.message);
 
@@ -1042,7 +1067,7 @@ openModal(`
       color:#176b5b;
       line-height:1.5;
     ">
-      فاکتور تحویل کالا
+      ${invoiceTitle}
     </div>
   </div>
 
@@ -1066,7 +1091,7 @@ openModal(`
         color:#777;
         margin-bottom:5px;
       ">
-        👤 نام مشتری
+        👤 نام ${partyLabel}
       </div>
 
       <div style="
