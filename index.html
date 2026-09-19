@@ -86,6 +86,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 </style><style>
 @page{size:A4 portrait;margin:0}
 @media print{
+  #invoiceLogoWrap.noLogo{display:none!important;}
+  #invoiceSignatureBlock.noSignature{display:none!important;}
+
   html,body{
     margin:0 !important;
     padding:0 !important;
@@ -1373,7 +1376,7 @@ openModal(`
 const savedSignature=getInvoiceSignature(i.id);
 const signatureImg=document.getElementById("invoiceSignatureImage");
 const signatureHint=document.getElementById("invoiceSignatureHint");
-if(savedSignature && signatureImg){signatureImg.src=savedSignature;signatureImg.style.display="block";if(signatureHint)signatureHint.style.display="none";}
+if(savedSignature && signatureImg){signatureImg.src=savedSignature;signatureImg.style.display="block";if(signatureHint)signatureHint.style.display="none";const signatureBlock=document.getElementById("invoiceSignatureBlock");if(signatureBlock)signatureBlock.classList.remove("noSignature");}
 
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
