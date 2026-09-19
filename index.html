@@ -194,9 +194,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   }
   #invoiceSignatureImage{
     display:block !important;
-    max-width:180px !important;
-    max-height:70px !important;
-    margin-right:auto !important;
+    width:280px !important;
+    height:100px !important;
+    max-width:280px !important;
+    max-height:100px !important;
+    object-fit:contain !important;
+    margin:0 auto 2px !important;
   }
 }
 </style>
@@ -1353,10 +1356,10 @@ openModal(`
     </div>
   </div>
 
-  <div id="invoiceSignatureBox" style="border-top:1px solid #ddd;padding-top:8px;min-height:72px;display:flex;justify-content:flex-start;align-items:flex-end;direction:rtl;">
+  <div id="invoiceSignatureBlock" class="noSignature" style="border-top:1px solid #ddd;padding-top:8px;min-height:72px;display:flex;justify-content:flex-start;align-items:flex-end;direction:rtl;">
     <div style="width:220px;text-align:center;">
       <div style="font-size:12px;font-weight:bold;margin-bottom:3px;">امضای ${partyLabel}</div>
-      <img id="invoiceSignatureImage" src="" alt="امضا" style="display:none;width:180px;height:65px;object-fit:contain;margin:0 auto 2px;">
+      <img id="invoiceSignatureImage" src="" alt="امضا" style="display:none;width:280px;height:100px;object-fit:contain;margin:0 auto 2px;">
       <div id="invoiceSignatureHint" class="noPrint" style="font-size:11px;color:#999;padding:12px 0;">هنوز امضایی ثبت نشده</div>
       <div class="noPrint" style="display:flex;justify-content:center;gap:5px;margin-top:3px;">
         <button type="button" class="secondary" style="padding:5px 9px;font-size:11px" onclick="openInvoiceSignature()">✍️ ${getInvoiceSignature(i.id)?"ویرایش امضا":"ثبت امضا"}</button>
@@ -1374,9 +1377,10 @@ openModal(`
 `);
 
 const savedSignature=getInvoiceSignature(i.id);
+const signatureBlock=document.getElementById("invoiceSignatureBlock");
 const signatureImg=document.getElementById("invoiceSignatureImage");
 const signatureHint=document.getElementById("invoiceSignatureHint");
-if(savedSignature && signatureImg){signatureImg.src=savedSignature;signatureImg.style.display="block";if(signatureHint)signatureHint.style.display="none";const signatureBlock=document.getElementById("invoiceSignatureBlock");if(signatureBlock)signatureBlock.classList.remove("noSignature");}
+if(savedSignature && signatureImg){signatureImg.src=savedSignature;signatureImg.style.display="block";if(signatureHint)signatureHint.style.display="none";if(signatureBlock)signatureBlock.classList.remove("noSignature");}
 
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
