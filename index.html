@@ -181,6 +181,20 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     page-break-inside:avoid !important;
     break-inside:avoid !important;
   }
+
+  #invoiceSignatureBox{
+    page-break-inside:avoid !important;
+    break-inside:avoid !important;
+  }
+  #invoiceSignatureCanvas{
+    display:none !important;
+  }
+  #invoiceSignatureImage{
+    display:block !important;
+    max-width:180px !important;
+    max-height:70px !important;
+    margin-right:auto !important;
+  }
 }
 </style>
 
@@ -1057,7 +1071,66 @@ setInvoiceType(inv.data.id,invoiceType);
 await loadData();closeModal();showInvoice(inv.data.id);
 };
 
+function getInvoiceSignature(id){
+  try{return JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}")[id]||"";}catch(e){return "";}
+}
+function setInvoiceSignature(id,data){
+  let m={};
+  try{m=JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}")}catch(e){}
+  if(data)m[id]=data; else delete m[id];
+  localStorage.setItem("barfInvoiceSignatures",JSON.stringify(m));
+}
+window.openInvoiceSignature=()=>{
+  const id=window._currentInvoiceSignatureId;
+  if(!id)return;
+  const canvas=document.getElementById("invoiceSignatureCanvas");
+  if(!canvas)return;
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const old=getInvoiceSignature(id);
+  if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,canvas.width,canvas.height);img.src=old;}
+  document.getElementById("invoiceSignatureModal")?.remove();
+  const wrap=document.createElement("div");
+  wrap.id="invoiceSignatureModal";
+  wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px";
+  wrap.innerHTML=`<div style="background:#fff;border-radius:18px;padding:16px;width:min(520px,96vw);box-shadow:0 20px 60px rgba(0,0,0,.25);direction:rtl">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:16px">امضای الکترونیکی</b><button type="button" class="close" onclick="document.getElementById('invoiceSignatureModal')?.remove()">×</button></div>
+    <div style="font-size:12px;color:#71807b;margin-bottom:8px">امضای خود را داخل کادر بکشید</div>
+    <div style="border:1px solid #cfd8d5;border-radius:12px;background:#fff;overflow:hidden;touch-action:none"><canvas id="invoiceSignatureCanvas" width="900" height="300" style="display:block;width:100%;height:180px;background:#fff;touch-action:none"></canvas></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="secondary" onclick="clearInvoiceSignature()">پاک کردن</button><button type="button" class="primary" style="margin-right:auto" onclick="saveInvoiceSignature()">ثبت امضا</button></div>
+  </div>`;
+  document.body.appendChild(wrap);
+  const c=document.getElementById("invoiceSignatureCanvas");
+  const cx=c.getContext("2d");
+  cx.strokeStyle="#111";cx.lineWidth=5;cx.lineCap="round";cx.lineJoin="round";
+  let drawing=false;
+  const pos=e=>{const r=c.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*c.width/r.width,y:(src.clientY-r.top)*c.height/r.height};};
+  const start=e=>{e.preventDefault();drawing=true;const p=pos(e);cx.beginPath();cx.moveTo(p.x,p.y);};
+  const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);cx.lineTo(p.x,p.y);cx.stroke();};
+  const end=e=>{if(e)e.preventDefault();drawing=false;};
+  c.onmousedown=start;c.onmousemove=move;c.onmouseup=end;c.onmouseleave=end;c.ontouchstart=start;c.ontouchmove=move;c.ontouchend=end;
+};
+window.clearInvoiceSignature=()=>{const c=document.getElementById("invoiceSignatureCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);};
+window.saveInvoiceSignature=()=>{
+  const id=window._currentInvoiceSignatureId,c=document.getElementById("invoiceSignatureCanvas");if(!id||!c)return;
+  const data=c.toDataURL("image/png");
+  const ctx=c.getContext("2d"),pix=ctx.getImageData(0,0,c.width,c.height).data;
+  let hasInk=false;for(let i=3;i<pix.length;i+=4){if(pix[i]>0){hasInk=true;break;}}
+  if(!hasInk)return alert("لطفاً ابتدا امضا کنید.");
+  setInvoiceSignature(id,data);
+  const img=document.getElementById("invoiceSignatureImage");if(img){img.src=data;img.style.display="block";}
+  const hint=document.getElementById("invoiceSignatureHint");if(hint)hint.style.display="none";
+  document.getElementById("invoiceSignatureModal")?.remove();
+};
+window.removeInvoiceSignature=()=>{
+  const id=window._currentInvoiceSignatureId;if(!id)return;
+  setInvoiceSignature(id,"");
+  const img=document.getElementById("invoiceSignatureImage");if(img){img.src="";img.style.display="none";}
+  const hint=document.getElementById("invoiceSignatureHint");if(hint)hint.style.display="block";
+};
+
 window.showInvoice=async id=>{
+window._currentInvoiceSignatureId=id;
 let i=data.invoices.find(x=>String(x.id)===String(id));
 if(!i) return alert("خطا! فاکتور یافت نشد.");
 let invoiceUnit=getInvoiceCurrency(i.id);
@@ -1264,7 +1337,7 @@ openModal(`
     </tbody>
   </table>
 
-  <div style="border:1px solid #ccc;padding:10px;border-radius:8px;background:#f9f9f9;font-size:13px;margin-bottom:15px;">
+  <div style="border:1px solid #ccc;padding:10px;border-radius:8px;background:#f9f9f9;font-size:13px;margin-bottom:10px;">
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
       <span>مبلغ قابل پرداخت:</span>
       <b>${money(fromToman(i.total,invoiceUnit),invoiceUnit)}</b>
@@ -1278,6 +1351,18 @@ openModal(`
       <span>${money(fromToman(i.remaining,invoiceUnit),invoiceUnit)}</span>
     </div>
   </div>
+
+  <div id="invoiceSignatureBox" style="border-top:1px solid #ddd;padding-top:8px;min-height:72px;display:flex;justify-content:flex-start;align-items:flex-end;direction:rtl;">
+    <div style="width:220px;text-align:center;">
+      <div style="font-size:12px;font-weight:bold;margin-bottom:3px;">امضای ${partyLabel}</div>
+      <img id="invoiceSignatureImage" src="" alt="امضا" style="display:none;width:180px;height:65px;object-fit:contain;margin:0 auto 2px;">
+      <div id="invoiceSignatureHint" class="noPrint" style="font-size:11px;color:#999;padding:12px 0;">هنوز امضایی ثبت نشده</div>
+      <div class="noPrint" style="display:flex;justify-content:center;gap:5px;margin-top:3px;">
+        <button type="button" class="secondary" style="padding:5px 9px;font-size:11px" onclick="openInvoiceSignature()">✍️ ${getInvoiceSignature(i.id)?"ویرایش امضا":"ثبت امضا"}</button>
+        <button type="button" class="danger" style="padding:5px 9px;font-size:11px" onclick="removeInvoiceSignature()">حذف</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <br>
@@ -1286,6 +1371,11 @@ openModal(`
   <button class="close" type="button" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
 </div>
 `);
+
+const savedSignature=getInvoiceSignature(i.id);
+const signatureImg=document.getElementById("invoiceSignatureImage");
+const signatureHint=document.getElementById("invoiceSignatureHint");
+if(savedSignature && signatureImg){signatureImg.src=savedSignature;signatureImg.style.display="block";if(signatureHint)signatureHint.style.display="none";}
 
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
