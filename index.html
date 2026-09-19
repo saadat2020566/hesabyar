@@ -1083,12 +1083,6 @@ function setInvoiceSignature(id,data){
 window.openInvoiceSignature=()=>{
   const id=window._currentInvoiceSignatureId;
   if(!id)return;
-  const canvas=document.getElementById("invoiceSignatureCanvas");
-  if(!canvas)return;
-  const ctx=canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const old=getInvoiceSignature(id);
-  if(old){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,canvas.width,canvas.height);img.src=old;}
   document.getElementById("invoiceSignatureModal")?.remove();
   const wrap=document.createElement("div");
   wrap.id="invoiceSignatureModal";
@@ -1101,7 +1095,11 @@ window.openInvoiceSignature=()=>{
   </div>`;
   document.body.appendChild(wrap);
   const c=document.getElementById("invoiceSignatureCanvas");
+  if(!c)return;
   const cx=c.getContext("2d");
+  cx.clearRect(0,0,c.width,c.height);
+  const old=getInvoiceSignature(id);
+  if(old){const img=new Image();img.onload=()=>cx.drawImage(img,0,0,c.width,c.height);img.src=old;}
   cx.strokeStyle="#111";cx.lineWidth=5;cx.lineCap="round";cx.lineJoin="round";
   let drawing=false;
   const pos=e=>{const r=c.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*c.width/r.width,y:(src.clientY-r.top)*c.height/r.height};};
