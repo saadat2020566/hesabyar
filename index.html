@@ -226,7 +226,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .cashListHead{display:flex;justify-content:flex-start;margin:10px 0 14px}.cashTableWrap{overflow:auto;border:1px solid #e1e9e6;border-radius:16px}.cashTable{width:100%;border-collapse:collapse;min-width:760px;background:#fff}.cashTable th,.cashTable td{padding:11px 9px;border-bottom:1px solid #e8eeec;text-align:center;font-size:12px}.cashTable th{background:#f3f7f5;font-weight:800;color:#29413a}.cashTable tr:last-child td{border-bottom:0}
 @media(max-width:700px){.cashFormGrid{grid-template-columns:1fr}.cashFormGrid .full{grid-column:auto}.cashListHead button{width:100%}}
 </style>
-</head>
+<style id="signaturePrintFix">@media print{#invoiceSignatureBlock{display:flex!important;min-height:155px!important;}#invoiceCustomerSignatureImage,#invoiceSellerSignatureImage{display:none;width:320px!important;height:140px!important;max-width:320px!important;}#invoiceCustomerSignatureImage[src]:not([src=""]),#invoiceSellerSignatureImage[src]:not([src=""]){display:block!important;}#invoiceSignatureBlock .noPrint{display:none!important;}}</style></head>
 <style>
 #splash{
   position:fixed;
@@ -1079,61 +1079,36 @@ setInvoiceType(inv.data.id,invoiceType);
 await loadData();closeModal();showInvoice(inv.data.id);
 };
 
-function getInvoiceSignature(id){
-  try{return JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}")[id]||"";}catch(e){return "";}
+function getInvoiceSignature(id,role="seller"){
+  try{const m=JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}"); if(typeof m[id]==="object") return m[id]?.[role]||""; return role==="seller"?(m[id]||""):"";}catch(e){return "";}
 }
-function setInvoiceSignature(id,data){
-  let m={};
-  try{m=JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}")}catch(e){}
-  if(data)m[id]=data; else delete m[id];
+function setInvoiceSignature(id,data,role="seller"){
+  let m={}; try{m=JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}")}catch(e){}
+  const old=typeof m[id]==="string"?m[id]:""; const obj=typeof m[id]==="object"&&m[id]?m[id]:{};
+  if(old&&!obj.seller)obj.seller=old;
+  if(data)obj[role]=data;else delete obj[role];
+  if(obj.customer||obj.seller)m[id]=obj;else delete m[id];
   localStorage.setItem("barfInvoiceSignatures",JSON.stringify(m));
 }
-window.openInvoiceSignature=()=>{
-  const id=window._currentInvoiceSignatureId;
-  if(!id)return;
-  document.getElementById("invoiceSignatureModal")?.remove();
-  const wrap=document.createElement("div");
-  wrap.id="invoiceSignatureModal";
-  wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px";
+window.openInvoiceSignature=(role="seller")=>{
+  const id=window._currentInvoiceSignatureId;if(!id)return; window._currentInvoiceSignatureRole=role;
+  document.getElementById("invoiceSignatureModal")?.remove(); const title=role==="customer"?"امضای مشتری":"امضای فروشنده";
+  const wrap=document.createElement("div");wrap.id="invoiceSignatureModal";wrap.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px";
   wrap.innerHTML=`<div style="background:#fff;border-radius:18px;padding:16px;width:min(520px,96vw);box-shadow:0 20px 60px rgba(0,0,0,.25);direction:rtl">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:16px">امضای الکترونیکی</b><button type="button" class="close" onclick="document.getElementById('invoiceSignatureModal')?.remove()">×</button></div>
-    <div style="font-size:12px;color:#71807b;margin-bottom:8px">امضای خود را داخل کادر بکشید</div>
-    <div style="border:1px solid #cfd8d5;border-radius:12px;background:#fff;overflow:hidden;touch-action:none"><canvas id="invoiceSignatureCanvas" width="900" height="300" style="display:block;width:100%;height:180px;background:#fff;touch-action:none"></canvas></div>
-    <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="secondary" onclick="clearInvoiceSignature()">پاک کردن</button><button type="button" class="primary" style="margin-right:auto" onclick="saveInvoiceSignature()">ثبت امضا</button></div>
-  </div>`;
-  document.body.appendChild(wrap);
-  const c=document.getElementById("invoiceSignatureCanvas");
-  if(!c)return;
-  const cx=c.getContext("2d");
-  cx.clearRect(0,0,c.width,c.height);
-  const old=getInvoiceSignature(id);
-  if(old){const img=new Image();img.onload=()=>cx.drawImage(img,0,0,c.width,c.height);img.src=old;}
-  cx.strokeStyle="#111";cx.lineWidth=5;cx.lineCap="round";cx.lineJoin="round";
-  let drawing=false;
-  const pos=e=>{const r=c.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*c.width/r.width,y:(src.clientY-r.top)*c.height/r.height};};
-  const start=e=>{e.preventDefault();drawing=true;const p=pos(e);cx.beginPath();cx.moveTo(p.x,p.y);};
-  const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);cx.lineTo(p.x,p.y);cx.stroke();};
-  const end=e=>{if(e)e.preventDefault();drawing=false;};
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:16px">${title}</b><button type="button" class="close" onclick="document.getElementById('invoiceSignatureModal')?.remove()">×</button></div>
+    <div style="font-size:12px;color:#71807b;margin-bottom:8px">امضا را داخل کادر بکشید</div>
+    <div style="border:1px solid #cfd8d5;border-radius:12px;background:#fff;overflow:hidden;touch-action:none"><canvas id="invoiceSignatureCanvas" width="1000" height="400" style="display:block;width:100%;height:220px;background:#fff;touch-action:none"></canvas></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="secondary" onclick="clearInvoiceSignature()">پاک کردن</button><button type="button" class="primary" style="margin-right:auto" onclick="saveInvoiceSignature()">ثبت امضا</button></div></div>`;
+  document.body.appendChild(wrap); const c=document.getElementById("invoiceSignatureCanvas");if(!c)return;const cx=c.getContext("2d");cx.clearRect(0,0,c.width,c.height);
+  const old=getInvoiceSignature(id,role);if(old){const img=new Image();img.onload=()=>cx.drawImage(img,0,0,c.width,c.height);img.src=old;}
+  cx.strokeStyle="#111";cx.lineWidth=6;cx.lineCap="round";cx.lineJoin="round";let drawing=false;
+  const pos=e=>{const r=c.getBoundingClientRect(),src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*c.width/r.width,y:(src.clientY-r.top)*c.height/r.height};};
+  const start=e=>{e.preventDefault();drawing=true;const p=pos(e);cx.beginPath();cx.moveTo(p.x,p.y)}; const move=e=>{if(!drawing)return;e.preventDefault();const p=pos(e);cx.lineTo(p.x,p.y);cx.stroke()};const end=e=>{if(e)e.preventDefault();drawing=false};
   c.onmousedown=start;c.onmousemove=move;c.onmouseup=end;c.onmouseleave=end;c.ontouchstart=start;c.ontouchmove=move;c.ontouchend=end;
 };
-window.clearInvoiceSignature=()=>{const c=document.getElementById("invoiceSignatureCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height);};
-window.saveInvoiceSignature=()=>{
-  const id=window._currentInvoiceSignatureId,c=document.getElementById("invoiceSignatureCanvas");if(!id||!c)return;
-  const data=c.toDataURL("image/png");
-  const ctx=c.getContext("2d"),pix=ctx.getImageData(0,0,c.width,c.height).data;
-  let hasInk=false;for(let i=3;i<pix.length;i+=4){if(pix[i]>0){hasInk=true;break;}}
-  if(!hasInk)return alert("لطفاً ابتدا امضا کنید.");
-  setInvoiceSignature(id,data);
-  const img=document.getElementById("invoiceSignatureImage");if(img){img.src=data;img.style.display="block";}
-  const hint=document.getElementById("invoiceSignatureHint");if(hint)hint.style.display="none";
-  document.getElementById("invoiceSignatureModal")?.remove();
-};
-window.removeInvoiceSignature=()=>{
-  const id=window._currentInvoiceSignatureId;if(!id)return;
-  setInvoiceSignature(id,"");
-  const img=document.getElementById("invoiceSignatureImage");if(img){img.src="";img.style.display="none";}
-  const hint=document.getElementById("invoiceSignatureHint");if(hint)hint.style.display="block";
-};
+window.clearInvoiceSignature=()=>{const c=document.getElementById("invoiceSignatureCanvas");if(c)c.getContext("2d").clearRect(0,0,c.width,c.height)};
+window.saveInvoiceSignature=()=>{const id=window._currentInvoiceSignatureId,role=window._currentInvoiceSignatureRole||"seller",c=document.getElementById("invoiceSignatureCanvas");if(!id||!c)return;const data=c.toDataURL("image/png"),pix=c.getContext("2d").getImageData(0,0,c.width,c.height).data;let hasInk=false;for(let i=3;i<pix.length;i+=4){if(pix[i]>0){hasInk=true;break}}if(!hasInk)return alert("لطفاً ابتدا امضا کنید.");setInvoiceSignature(id,data,role);const img=document.getElementById(role==="customer"?"invoiceCustomerSignatureImage":"invoiceSellerSignatureImage");if(img){img.src=data;img.style.display="block"}const btn=document.getElementById(role==="customer"?"invoiceCustomerSignatureBtn":"invoiceSellerSignatureBtn");if(btn)btn.textContent="✏️ ویرایش امضا";document.getElementById("invoiceSignatureModal")?.remove()};
+window.removeInvoiceSignature=(role="seller")=>{const id=window._currentInvoiceSignatureId;if(!id)return;setInvoiceSignature(id,"",role);const img=document.getElementById(role==="customer"?"invoiceCustomerSignatureImage":"invoiceSellerSignatureImage");if(img){img.src="";img.style.display="none"}const btn=document.getElementById(role==="customer"?"invoiceCustomerSignatureBtn":"invoiceSellerSignatureBtn");if(btn)btn.textContent="✍️ ثبت امضا"};
 
 window.showInvoice=async id=>{
 window._currentInvoiceSignatureId=id;
@@ -1358,15 +1333,16 @@ openModal(`
     </div>
   </div>
 
-  <div id="invoiceSignatureBlock" class="noSignature" style="border-top:1px solid #ddd;padding-top:8px;min-height:72px;display:flex;justify-content:flex-start;align-items:flex-end;direction:rtl;">
-    <div style="width:300px;min-width:300px;flex-shrink:0;text-align:center;">
-      <div id="invoiceSignatureLabel" class="noPrint" style="font-size:12px;font-weight:bold;margin-bottom:3px;">امضای ${partyLabel}</div>
-      <img id="invoiceSignatureImage" src="" alt="امضا" style="display:none;width:300px;height:120px;object-fit:contain;margin:0 auto 2px;">
-      <div id="invoiceSignatureHint" class="noPrint" style="font-size:11px;color:#999;padding:12px 0;">هنوز امضایی ثبت نشده</div>
-      <div class="noPrint" style="display:flex;justify-content:center;gap:5px;margin-top:3px;">
-        <button type="button" class="secondary" style="padding:5px 9px;font-size:11px" onclick="openInvoiceSignature()">✍️ ${getInvoiceSignature(i.id)?"ویرایش امضا":"ثبت امضا"}</button>
-        <button type="button" class="danger" style="padding:5px 9px;font-size:11px" onclick="removeInvoiceSignature()">حذف</button>
-      </div>
+  <div id="invoiceSignatureBlock" style="border-top:1px solid #ddd;padding-top:8px;margin-top:8px;display:flex;justify-content:space-between;gap:28px;direction:rtl;align-items:flex-end;">
+    <div style="flex:1;text-align:center;min-width:0;">
+      <div style="font-size:13px;font-weight:bold;margin-bottom:4px;">امضای مشتری</div>
+      <img id="invoiceCustomerSignatureImage" src="" alt="" style="display:none;width:320px;height:140px;max-width:100%;object-fit:contain;margin:0 auto 2px;">
+      <div class="noPrint" style="display:flex;justify-content:center;gap:5px;margin-top:3px;"><button id="invoiceCustomerSignatureBtn" type="button" class="secondary" style="padding:5px 9px;font-size:11px" onclick="openInvoiceSignature('customer')">✍️ ${getInvoiceSignature(i.id,"customer")?"ویرایش امضا":"ثبت امضا"}</button><button type="button" class="danger" style="padding:5px 9px;font-size:11px" onclick="removeInvoiceSignature('customer')">حذف</button></div>
+    </div>
+    <div style="flex:1;text-align:center;min-width:0;">
+      <div style="font-size:13px;font-weight:bold;margin-bottom:4px;">امضای فروشنده</div>
+      <img id="invoiceSellerSignatureImage" src="" alt="" style="display:none;width:320px;height:140px;max-width:100%;object-fit:contain;margin:0 auto 2px;">
+      <div class="noPrint" style="display:flex;justify-content:center;gap:5px;margin-top:3px;"><button id="invoiceSellerSignatureBtn" type="button" class="secondary" style="padding:5px 9px;font-size:11px" onclick="openInvoiceSignature('seller')">✍️ ${getInvoiceSignature(i.id,"seller")?"ویرایش امضا":"ثبت امضا"}</button><button type="button" class="danger" style="padding:5px 9px;font-size:11px" onclick="removeInvoiceSignature('seller')">حذف</button></div>
     </div>
   </div>
 </div>
@@ -1378,19 +1354,12 @@ openModal(`
 </div>
 `);
 
-const savedSignature=getInvoiceSignature(i.id);
-const signatureBlock=document.getElementById("invoiceSignatureBlock");
-const signatureImg=document.getElementById("invoiceSignatureImage");
-const signatureHint=document.getElementById("invoiceSignatureHint");
-if(savedSignature && signatureImg){
-  signatureImg.src=savedSignature;
-  signatureImg.style.display="block";
-  if(signatureHint)signatureHint.style.display="none";
-  if(signatureBlock){signatureBlock.classList.remove("noSignature");signatureBlock.style.display="flex";}
-} else if(signatureBlock){
-  signatureBlock.classList.add("noSignature");
-  signatureBlock.style.display="none";
-}
+const customerSignature=getInvoiceSignature(i.id,"customer");
+const sellerSignature=getInvoiceSignature(i.id,"seller");
+const customerImg=document.getElementById("invoiceCustomerSignatureImage");
+const sellerImg=document.getElementById("invoiceSellerSignatureImage");
+if(customerSignature&&customerImg){customerImg.src=customerSignature;customerImg.style.display="block";}
+if(sellerSignature&&sellerImg){sellerImg.src=sellerSignature;sellerImg.style.display="block";}
 
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
