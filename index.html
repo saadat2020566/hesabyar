@@ -293,18 +293,19 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
 
-const money=(n,unit="تومان")=>Number(n||0).toLocaleString("fa-IR")+" "+unit;
-const currencyUnit=()=>document.getElementById("invoiceCurrency")?.value||"تومان";
+const appCurrency=()=>localStorage.getItem("barfCurrency")||"تومان";
+const money=(n,unit=appCurrency())=>Number(n||0).toLocaleString("fa-IR")+" "+unit;
+const currencyUnit=()=>appCurrency();
 const currencyFactor=unit=>unit==="ریال"?10:1;
 const toToman=(amount,unit)=>Number(amount||0)/currencyFactor(unit);
 const fromToman=(amount,unit)=>Number(amount||0)*currencyFactor(unit);
-const getInvoiceCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
-const setInvoiceCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfInvoiceCurrencies",JSON.stringify(m));};
-const getExpenseCurrency=id=>{try{return (JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}"))[id]||"تومان"}catch(e){return "تومان"}};
+const getInvoiceCurrency=id=>appCurrency();
+const setInvoiceCurrency=(id,unit)=>{};
+const getExpenseCurrency=id=>appCurrency();
 const getInvoiceType=id=>{try{return (JSON.parse(localStorage.getItem("barfInvoiceTypes")||"{}"))[id]||"sale"}catch(e){return "sale"}};
 const setInvoiceType=(id,type)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceTypes")||"{}")}catch(e){}m[id]=type;localStorage.setItem("barfInvoiceTypes",JSON.stringify(m));};
-const setExpenseCurrency=(id,unit)=>{let m={};try{m=JSON.parse(localStorage.getItem("barfExpenseCurrencies")||"{}")}catch(e){}m[id]=unit;localStorage.setItem("barfExpenseCurrencies",JSON.stringify(m));};
-const dashboardCurrency=()=>"تومان"; const setDashboardCurrency=unit=>{}; const dashboardMoney=n=>money(Number(n)||0,"تومان"); const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
+const setExpenseCurrency=(id,unit)=>{};
+const dashboardCurrency=()=>appCurrency(); const setDashboardCurrency=unit=>{localStorage.setItem("barfCurrency",unit);}; const dashboardMoney=n=>money(Number(n)||0,appCurrency()); const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
 let currentPage="home";
@@ -377,6 +378,7 @@ window.doLogin=async function(){
    authScreen("ارتباط با سرور انجام نشد. اینترنت را بررسی کنید.");
  }
 };
+window.changeAppCurrency=unit=>{if(unit!=="تومان"&&unit!=="ریال")return;localStorage.setItem("barfCurrency",unit);render(currentPage||"home",false);};
 window.logout=async function(){await sb.auth.signOut();currentUser=null;authScreen("از حساب خارج شدید.");};
 
 async function loadData(){
@@ -546,7 +548,7 @@ function home(){
  const paymentCashTotal=paymentCashAmount+expenseCashAmount+paymentCashDocs.reduce((a,x)=>a+(Number(x.amount)||0),0);
  const receivedTotal=receivedCashAmount+receivedCheckAmount;
  const paymentTotal=paymentCashTotal+ownChecks.reduce((a,x)=>a+(Number(x.amount)||0),0);
- main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div><button class="secondary" onclick="logout()">خروج</button></div></div>
+ main.innerHTML=`<div class="head"><div><h1>داشبورد</h1><div class="muted">${esc(currentUser.email)}</div></div><div style="display:flex;align-items:center;gap:8px"><select id="appCurrencySelect" class="input" style="width:auto;min-width:92px;padding:8px 10px" onchange="window.changeAppCurrency(this.value)"><option value="تومان" ${appCurrency()==="تومان"?"selected":""}>تومان</option><option value="ریال" ${appCurrency()==="ریال"?"selected":""}>ریال</option></select><button class="secondary" onclick="logout()">خروج</button></div></div>
  <div class="dashboardFlow">
    <div class="moneyPanel receivedPanel">
      <div class="moneyPanelHead"><div><h2>دریافت‌ها</h2><div class="muted">جمع کل دریافت‌ها: ${money(receivedTotal)}</div></div><div class="moneyPanelIcon">↓</div></div>
@@ -626,11 +628,11 @@ function finance(){
 window.editExpense=async id=>{
   let x=data.expenses.find(e=>String(e.id)===String(id));
   if(!x)return;
-  let unit=getExpenseCurrency(x.id);let shown=fromToman(x.amount,unit);openModal(`<div class="modalHead"><h2>ویرایش هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="een" class="input" value="${esc(x.title)}"></div><div class="field"><label>واحد پول</label><select id="eecurrency" class="input"><option value="تومان" ${unit==="تومان"?"selected":""}>تومان</option><option value="ریال" ${unit==="ریال"?"selected":""}>ریال</option></select></div><div class="field"><label>مبلغ</label><input id="eea" class="input" type="number" value="${shown}"></div><div class="field full"><label>توضیحات</label><input id="eenote" class="input" value="${esc(x.note||'')}"></div></div><br><button class="primary" onclick="updateExpense('${x.id}')">ذخیره تغییرات</button>`);
+  let unit=appCurrency();let shown=fromToman(x.amount,unit);openModal(`<div class="modalHead"><h2>ویرایش هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="een" class="input" value="${esc(x.title)}"></div><div class="field"><label>مبلغ (${unit})</label><input id="eea" class="input" type="number" value="${shown}"></div><div class="field full"><label>توضیحات</label><input id="eenote" class="input" value="${esc(x.note||'')}"></div></div><br><button class="primary" onclick="updateExpense('${x.id}')">ذخیره تغییرات</button>`);
 };
 
 window.updateExpense=async id=>{
-  let title=document.getElementById("een").value.trim(),inputAmount=+document.getElementById("eea").value||0,unit=document.getElementById("eecurrency")?.value||"تومان",amount=toToman(inputAmount,unit),note=document.getElementById("eenote").value.trim();
+  let title=document.getElementById("een").value.trim(),inputAmount=+document.getElementById("eea").value||0,unit=appCurrency(),amount=toToman(inputAmount,unit),note=document.getElementById("eenote").value.trim();
   if(!title||!amount)return alert("عنوان و مبلغ را وارد کنید");
   let r=await sb.from("expenses").update({title,amount,note}).eq("id",id).eq("user_id",currentUser.id);
   if(r.error)return alert("خطا در ویرایش هزینه:\n"+r.error.message);
@@ -821,8 +823,8 @@ window.saveCustomer=async()=>{let name=nn.value.trim();if(!name)return alert("ن
 window.newProduct=()=>openModal(`<div class="modalHead"><h2>محصول جدید</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>نام</label><input id="pn" class="input"></div><div class="field"><label>واحد</label><input id="pu" class="input" value="عدد"></div><div class="field"><label>قیمت خرید</label><input id="pb" class="input" type="number" value="0"></div><div class="field"><label>قیمت فروش</label><input id="ps" class="input" type="number" value="0"></div><div class="field"><label>موجودی</label><input id="pst" class="input" type="number" value="0"></div><div class="field"><label>حداقل موجودی</label><input id="pmin" class="input" type="number" value="0"></div></div><br><button class="primary" onclick="saveProduct()">ثبت</button>`);
 window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("نام محصول را وارد کنید");let r=await sb.from("products").insert({user_id:currentUser.id,name,unit:pu.value||"عدد",buy_price:+pb.value||0,sell_price:+ps.value||0,stock:+pst.value||0,min_stock:+pmin.value||0});if(r.error)return alert(r.error.message);await loadData();closeModal();render("products")};
 
-window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>واحد پول</label><select id="expenseCurrency" class="input"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
-window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,unit=document.getElementById("expenseCurrency")?.value||"تومان";if(!title||!inputAmount)return alert("عنوان و مبلغ را وارد کنید");let amount=toToman(inputAmount,unit);let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()}).select().single();if(r.error)return alert(r.error.message);setExpenseCurrency(r.data.id,unit);await loadData();closeModal();render("finance")};
+window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>مبلغ (${appCurrency()})</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
+window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,unit=appCurrency();if(!title||!inputAmount)return alert("عنوان و مبلغ را وارد کنید");let amount=toToman(inputAmount,unit);let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()}).select().single();if(r.error)return alert(r.error.message);setExpenseCurrency(r.data.id,unit);await loadData();closeModal();render("finance")};
 
 async function normalizePurchaseInvoiceNumbers(){
   const purchaseIds=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase" && Number(i.no)>0).map(i=>i.id);
@@ -848,7 +850,7 @@ const partyLabel=isPurchase?"فروشنده":"مشتری";
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
 let defaultNo=nextInvoiceNumber(invoiceType);
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
-window._invoiceCurrency="تومان";
+window._invoiceCurrency=appCurrency();
 
 openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="newInvoiceChooser()">×</button></div>
 <div class="field">
@@ -879,7 +881,6 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
 </div>
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>${partyLabel}</label><select id="ic" class="input"><option value="">${isPurchase?"فروشنده متفرقه":"مشتری متفرقه"}</option>${opts}</select></div>
-<div class="field full"><label>واحد پول</label><select id="invoiceCurrency" class="input" onchange="updateInvoiceCurrency()"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div>
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
@@ -908,18 +909,7 @@ window.closeSubModal = closeSubModal;
 
 document.getElementById("subModal").onclick=e=>{if(e.target.id==="subModal")closeSubModal()};
 
-window.updateInvoiceCurrency=()=>{
-  let next=currencyUnit();
-  let prev=window._invoiceCurrency||"تومان";
-  if(prev===next){updateInvoiceTotals();return;}
-  let ratio=currencyFactor(next)/currencyFactor(prev);
-  currentInvoiceItems=currentInvoiceItems.map(x=>({...x,unit:x.unit*ratio,total:x.total*ratio}));
-  let paid=document.getElementById("paid");
-  if(paid) paid.value=(+paid.value||0)*ratio;
-  window._invoiceCurrency=next;
-  renderInvoiceItems();
-  updateInvoiceTotals();
-};
+window.updateInvoiceCurrency=()=>{window._invoiceCurrency=appCurrency();renderInvoiceItems();updateInvoiceTotals();};
 
 window.onSubProdChange=()=>{
 let sel=document.getElementById("subProd");
