@@ -389,7 +389,7 @@ async function loadData(){
  for(const r of [c,p,i,e])if(r.error)throw r.error;
  data.customers=(c.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone||"",debt:+x.debt||0,purchases:+x.total_purchases||0}));
  data.products=(p.data||[]).map(x=>({id:x.id,name:x.name,unit:x.unit||"عدد",buy:+x.buy_price||0,sell:+x.sell_price||0,stock:+x.stock||0,min:+x.min_stock||0}));
- data.invoices=(i.data||[]).map(x=>({id:x.id,no:x.invoice_no,customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:x.invoice_date || new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
+ data.invoices=(i.data||[]).map(x=>({id:x.id,no:Math.abs(+x.invoice_no||0),customerId:x.customer_id,customer:x.customer_name||"مشتری متفرقه",total:+x.total||0,paid:+x.paid||0,remaining:+x.remaining||0,date:x.invoice_date || new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at))}));
  data.expenses=(e.data||[]).map(x=>({id:x.id,title:x.title,amount:+x.amount||0,note:x.note||x.description||"",date:new Intl.DateTimeFormat("fa-IR").format(new Date(x.created_at)),currency:getExpenseCurrency(x.id)}));
 }
 
@@ -619,9 +619,8 @@ window.deleteProduct=async id=>{
   render("products");
 };
 function finance(){
-  let s=data.invoices.reduce((a,i)=>a+i.total,0),e=data.expenses.reduce((a,x)=>a+x.amount,0);
   let list=data.expenses.map(x=>`<div class="section" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div style="flex:1"><div style="font-weight:700;font-size:16px">${esc(x.title)}</div><div style="margin-top:6px;font-weight:700">${money(fromToman(x.amount,getExpenseCurrency(x.id)),getExpenseCurrency(x.id))}</div><div style="margin-top:6px;color:#666;font-size:13px;line-height:1.8">${esc(x.note||"بدون توضیحات")}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary" style="padding:7px 10px;font-size:11px" onclick="editExpense('${x.id}')">✏️ ویرایش</button><button class="danger" style="padding:7px 10px;font-size:11px" onclick="deleteExpense('${x.id}')">🗑️ حذف</button></div></div></div>`).join("");
-  main.innerHTML=`<div class="head"><h1>مالی</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="cards">${metric("فروش کل",money(s),"فاکتورها")}${metric("هزینه کل",money(e),"هزینه‌ها")}${metric("سود تقریبی",money(s-e),"فروش منهای هزینه")}</div><div class="section"><div class="sectionTitle"><h2>لیست هزینه‌ها</h2></div>${list||'<div style="color:#777;padding:12px 0">هنوز هزینه‌ای ثبت نشده است.</div>'}</div>`;
+  main.innerHTML=`<div class="head"><h1>ثبت هزینه‌ها</h1><button class="primary" onclick="newExpense()">+ ثبت هزینه</button></div><div class="section"><div class="sectionTitle"><h2>لیست هزینه‌ها</h2></div>${list||'<div style="color:#777;padding:12px 0">هنوز هزینه‌ای ثبت نشده است.</div>'}</div>`;
 }
 
 window.editExpense=async id=>{
@@ -825,6 +824,21 @@ window.saveProduct=async()=>{let name=pn.value.trim();if(!name)return alert("ن�
 window.newExpense=()=>openModal(`<div class="modalHead"><h2>ثبت هزینه</h2><button class="close" type="button" onclick="closeModal()">×</button></div><div class="form"><div class="field"><label>عنوان</label><input id="en" class="input"></div><div class="field"><label>واحد پول</label><select id="expenseCurrency" class="input"><option value="تومان">تومان</option><option value="ریال">ریال</option></select></div><div class="field"><label>مبلغ</label><input id="ea" class="input" type="number"></div><div class="field full"><label>توضیحات</label><input id="enote" class="input"></div></div><br><button class="primary" onclick="saveExpense()">ثبت</button>`);
 window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,unit=document.getElementById("expenseCurrency")?.value||"تومان";if(!title||!inputAmount)return alert("عنوان و مبلغ را وارد کنید");let amount=toToman(inputAmount,unit);let r=await sb.from("expenses").insert({user_id:currentUser.id,title,amount,note:enote.value.trim()}).select().single();if(r.error)return alert(r.error.message);setExpenseCurrency(r.data.id,unit);await loadData();closeModal();render("finance")};
 
+async function normalizePurchaseInvoiceNumbers(){
+  const purchaseIds=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase" && Number(i.no)>0).map(i=>i.id);
+  for(const id of purchaseIds){
+    const inv=data.invoices.find(x=>String(x.id)===String(id));
+    if(!inv) continue;
+    const r=await sb.from("invoices").update({invoice_no:-Math.abs(Number(inv.no)||0)}).eq("id",id).eq("user_id",currentUser.id);
+    if(r.error) throw r.error;
+  }
+}
+
+const nextInvoiceNumber=(invoiceType)=>{
+  const nums=data.invoices.filter(i=>getInvoiceType(i.id)===invoiceType).map(i=>Math.abs(Number(i.no)||0));
+  return (nums.length?Math.max(...nums):0)+1;
+};
+
 window.newInvoice=(invoiceType="sale")=>{
 currentInvoiceItems=[];
 window._invoiceType=invoiceType;
@@ -832,7 +846,7 @@ const isPurchase=invoiceType==="purchase";
 const invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
 const partyLabel=isPurchase?"فروشنده":"مشتری";
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
-let defaultNo=data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1;
+let defaultNo=nextInvoiceNumber(invoiceType);
 let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 window._invoiceCurrency="تومان";
 
@@ -997,13 +1011,16 @@ function faToEnDigits(value){
   return String(value ?? "").replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
 }
 
-let no=+faToEnDigits(document.getElementById("invoiceNo").value)||(data.invoices.reduce((m,x)=>Math.max(m,+x.no||0),1023)+1);
+let no=+faToEnDigits(document.getElementById("invoiceNo").value)||nextInvoiceNumber(window._invoiceType||"sale");
 let invoiceDate=document.getElementById("invDate").value;
 let invoiceType=window._invoiceType||"sale";
 
+try{await normalizePurchaseInvoiceNumbers();}catch(e){return alert("خطا در آماده‌سازی شماره فاکتورهای خرید:\n"+e.message);}
+
+let storedInvoiceNo=invoiceType==="purchase" ? -Math.abs(no) : Math.abs(no);
 let inv=await sb.from("invoices").insert({
   user_id:currentUser.id,
-  invoice_no:no,
+  invoice_no:storedInvoiceNo,
   invoice_date:invoiceDate,
   customer_id:cid?+cid:null,
   customer_name:c?.name||"مشتری متفرقه",
@@ -1022,8 +1039,8 @@ if(inv.error){
   ){
     return alert(
       "شماره فاکتور تکراری است.\n\n" +
-      "این شماره قبلاً برای یک فاکتور استفاده شده است.\n" +
-      "لطفاً شماره فاکتور دیگری وارد کنید."
+      "این شماره قبلاً برای یک فاکتور " + (invoiceType==="purchase" ? "خرید" : "فروش") + " استفاده شده است.\n" +
+      "لطفاً شماره دیگری برای همین نوع فاکتور وارد کنید."
     );
   }
 
