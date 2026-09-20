@@ -190,13 +190,16 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     text-align:center !important;
   }
 
-  #printableInvoice table thead tr{
+  #printableInvoice table thead tr,
+  #printableInvoice table thead tr th{
     background:#d9ecf7 !important;
+    background-color:#d9ecf7 !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
   }
   #printableInvoice table thead th{
-    font-size:13px !important;
+    font-size:14px !important;
     font-weight:700 !important;
-    background:#d9ecf7 !important;
     border-color:#d7e2e8 !important;
   }
 
@@ -412,6 +415,26 @@ const setExpenseCurrency=(id,unit)=>{};
 const dashboardCurrency=()=>appCurrency(); const setDashboardCurrency=unit=>{localStorage.setItem("barfCurrency",unit);}; const dashboardMoney=n=>money(Number(n)||0,appCurrency()); const today=()=>new Intl.DateTimeFormat("fa-IR").format(new Date());
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const faNum=n=>String(n??"").replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+const persianNumberWords=n=>{
+  n=Math.floor(Math.abs(Number(n)||0));
+  const ones=["","یک","دو","سه","چهار","پنج","شش","هفت","هشت","نه"];
+  const teens=["ده","یازده","دوازده","سیزده","چهارده","پانزده","شانزده","هفده","هجده","نوزده"];
+  const tens=["","","بیست","سی","چهل","پنجاه","شصت","هفتاد","هشتاد","نود"];
+  const hundreds=["","صد","دویست","سیصد","چهارصد","پانصد","ششصد","هفتصد","هشتصد","نهصد"];
+  const scales=["","هزار","میلیون","میلیارد","تریلیون","کوادریلیون"];
+  const chunk=x=>{
+    const a=[];
+    const h=Math.floor(x/100), r=x%100;
+    if(h)a.push(hundreds[h]);
+    if(r){ if(r<10)a.push(ones[r]); else if(r<20)a.push(teens[r-10]); else {a.push(tens[Math.floor(r/10)]); if(r%10)a.push(ones[r%10]);}}
+    return a.join(" و ");
+  };
+  if(n===0)return "صفر";
+  const out=[]; let i=0;
+  while(n>0){const c=n%1000;if(c)out.unshift(chunk(c)+(scales[i]?" "+scales[i]:""));n=Math.floor(n/1000);i++;}
+  return out.join(" و ");
+};
+const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
@@ -1385,13 +1408,13 @@ openModal(`
 
   <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
     <thead>
-      <tr style="background:#d9ecf7;border-bottom:1px solid #c7dce8;font-size:13px;font-weight:700;">
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">ردیف</th>
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">نوع کالا</th>
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">مدل کالا</th>
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">تعداد</th>
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">قیمت واحد</th>
-        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">مبلغ کل</th>
+      <tr style="background:#d9ecf7 !important;background-color:#d9ecf7 !important;border-bottom:1px solid #c7dce8;font-size:14px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">ردیف</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">نوع کالا</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">مدل کالا</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">تعداد</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">قیمت واحد</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">مبلغ کل</th>
       </tr>
     </thead>
     <tbody>
@@ -1411,6 +1434,9 @@ openModal(`
     <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
       <span>مانده حساب:</span>
       <span>${money(fromToman(i.remaining,invoiceUnit),invoiceUnit)}</span>
+    </div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #ddd;font-size:12px;color:#444;text-align:right;">
+      <b>مانده حساب به حروف:</b> ${moneyInWords(fromToman(i.remaining,invoiceUnit),invoiceUnit)}
     </div>
   </div>
 
