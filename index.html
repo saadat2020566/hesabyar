@@ -226,7 +226,50 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .cashListHead{display:flex;justify-content:flex-start;margin:10px 0 14px}.cashTableWrap{overflow:auto;border:1px solid #e1e9e6;border-radius:16px}.cashTable{width:100%;border-collapse:collapse;min-width:760px;background:#fff}.cashTable th,.cashTable td{padding:11px 9px;border-bottom:1px solid #e8eeec;text-align:center;font-size:12px}.cashTable th{background:#f3f7f5;font-weight:800;color:#29413a}.cashTable tr:last-child td{border-bottom:0}
 @media(max-width:700px){.cashFormGrid{grid-template-columns:1fr}.cashFormGrid .full{grid-column:auto}.cashListHead button{width:100%}}
 </style>
-<style id="signaturePrintFix">@media print{#invoiceSignatureBlock{display:flex!important;min-height:155px!important;}#invoiceCustomerSignatureImage,#invoiceSellerSignatureImage{display:none;width:320px!important;height:140px!important;max-width:320px!important;}#invoiceCustomerSignatureImage[src]:not([src=""]),#invoiceSellerSignatureImage[src]:not([src=""]){display:block!important;}#invoiceSignatureBlock .noPrint{display:none!important;}}</style></head>
+<style id="signaturePrintFix">@media print{
+  #invoiceSignatureBlock{
+    display:flex!important;
+    width:60%!important;
+    margin-left:auto!important;
+    margin-right:0!important;
+    min-height:155px!important;
+    padding-top:8px!important;
+    border-top:0!important;
+    justify-content:flex-start!important;
+    gap:14px!important;
+    direction:ltr!important;
+    align-items:flex-end!important;
+  }
+  #invoiceSignatureBlock > div{
+    flex:0 0 150px!important;
+    width:150px!important;
+    min-width:150px!important;
+    height:145px!important;
+    border:0!important;
+    outline:0!important;
+    box-shadow:none!important;
+    background:transparent!important;
+    padding:0!important;
+    margin:0!important;
+    text-align:center!important;
+  }
+  #invoiceSignatureBlock > div > div:first-child{
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  #invoiceCustomerSignatureImage,#invoiceSellerSignatureImage{
+    display:none;
+    width:320px!important;
+    height:120px!important;
+    max-width:320px!important;
+    max-height:120px!important;
+    object-fit:contain!important;
+    margin:0 auto 2px!important;
+  }
+  #invoiceCustomerSignatureImage[src]:not([src=""]),#invoiceSellerSignatureImage[src]:not([src=""]){display:block!important;}
+  #invoiceSignatureBlock .noPrint{display:none!important;}
+}</style></head>
 <style>
 #splash{
   position:fixed;
