@@ -437,6 +437,7 @@ const persianNumberWords=n=>{
 const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
+let invoiceViewing=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
 
 const nav=p=>{
@@ -455,6 +456,11 @@ function prepareHomeHistory(){
 
 window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
+  if(invoiceViewing){
+    invoiceViewing=false;
+    closeModal();
+    return;
+  }
   if(currentPage!=="home"){
     barfBackLock=true;
     render("home",false);
@@ -1319,6 +1325,8 @@ window.removeInvoiceSignature=(role="seller")=>{const id=window._currentInvoiceS
 
 window.showInvoice=async id=>{
 window._currentInvoiceSignatureId=id;
+invoiceViewing=true;
+try{ history.pushState({barfInvoiceView:true,page:currentPage,invoiceId:id},"",homeUrl()+"#sales-invoice-"+id); }catch(e){}
 let i=data.invoices.find(x=>String(x.id)===String(id));
 if(!i) return alert("خطا! فاکتور یافت نشد.");
 let invoiceUnit=getInvoiceCurrency(i.id);
