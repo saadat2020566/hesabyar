@@ -1383,7 +1383,7 @@ openModal(`
   <!-- عنوان فاکتور و اطلاعات اختیاری -->
   <div style="text-align:center;padding-top:5px;margin-bottom:12px;">
     <div style="font-size:20px;font-weight:800;color:#176b5b;line-height:1.5;">${invoiceTitle}</div>
-    ${optionalStoreTitle?`<div style="font-size:11px;color:#666;margin-top:2px;">${esc(storeTitleText)}</div>`:""}
+    ${optionalStoreTitle?`<div style="font-size:15px;font-weight:900;color:#176b5b;margin-top:3px;line-height:1.5;">${esc(storeTitleText)}</div>`:""}
   </div>
 
   <div style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;direction:rtl;">
@@ -1391,12 +1391,12 @@ openModal(`
     <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;">
       <div style="font-size:12px;color:#777;margin-bottom:4px;">👤 نام ${partyLabel}</div>
       <div style="font-size:16px;font-weight:bold;color:#111;">${esc(i.customer)}</div>
-      ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:5px;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
+      ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:5px;direction:rtl;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
     </div>
 
     <!-- وسط: آدرس و کد سفارش -->
-    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:center;">
-      ${optionalAddress?`<div style="font-size:12px;color:#555;">آدرس</div><div style="font-size:12px;color:#111;margin-top:3px;line-height:1.7;">${esc(addressText)}</div>`:""}
+    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;direction:rtl;">
+      ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;">آدرس: <span style="font-size:12px;color:#111;white-space:nowrap;">${esc(addressText)}</span></div>`:""}
       ${optionalOrderCode?`<div style="font-size:12px;color:#555;${optionalAddress?'margin-top:6px;':''}">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
     </div>
 
