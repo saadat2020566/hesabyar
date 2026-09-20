@@ -1137,21 +1137,22 @@ window.editInvoice=async id=>{
   const type=getInvoiceType(id)||"sale";
   const rr=await sb.from("invoice_items").select("*").eq("invoice_id",id).eq("user_id",currentUser.id).order("id");
   if(rr.error)return alert(rr.error.message);
+  const unit=getInvoiceCurrency(id);
   window._editingInvoiceId=id;
   window._invoiceType=type;
+  // ابتدا فرم را بساز، سپس اقلام فاکتور قبلی را داخل آن قرار بده تا پاک نشوند.
+  window.newInvoice(type);
   currentInvoiceItems=(rr.data||[]).map(x=>{
     const parts=String(x.product_name||"").split(" | مدل: ");
     const prodName=parts[0]||""; const model=parts[1]||"-";
-    const p=data.products.find(pp=>String(pp.id)===String(x.product_id))||{id:x.product_id,name:prodName,stock:0,buy:0,sell:0};
-    return {p,model,q:Number(x.quantity)||0,unit:fromToman(Number(x.unit_price)||0,getInvoiceCurrency(id)),total:fromToman(Number(x.line_total)||0,getInvoiceCurrency(id))};
+    const p=data.products.find(pp=>String(pp.id)===String(x.product_id))||{id:x.product_id,name:prodName,stock:999999,buy:0,sell:0};
+    return {p,model,q:Number(x.quantity)||0,unit:fromToman(Number(x.unit_price)||0,unit),total:fromToman(Number(x.line_total)||0,unit)};
   });
-  window.newInvoice(type);
-  window._editingInvoiceId=id;
+  window._invoiceCurrency=unit;
   setTimeout(()=>{
     const no=document.getElementById("invoiceNo"); if(no) no.value=String(Math.abs(Number(inv.no)||0)).replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
     const dt=document.getElementById("invDate"); if(dt) dt.value=inv.date||"";
     const sel=document.getElementById("ic"); if(sel) sel.value=inv.customer_id?String(inv.customer_id):"";
-    const unit=getInvoiceCurrency(id);
     const sub=currentInvoiceItems.reduce((a,b)=>a+b.total,0);
     const total=fromToman(Number(inv.total)||0,unit);
     const paid=fromToman(Number(inv.paid)||0,unit);
@@ -1448,30 +1449,28 @@ openModal(`
            ">
   </div>
 
-  <!-- عنوان فاکتور و اطلاعات اختیاری -->
-  <div style="text-align:center;padding-top:5px;margin-bottom:12px;">
+  <!-- عنوان فاکتور خارج از کادر -->
+  <div style="text-align:center;padding-top:2px;margin-bottom:10px;">
     <div style="font-size:20px;font-weight:800;color:#176b5b;line-height:1.5;">${invoiceTitle}</div>
     ${optionalStoreTitle?`<div style="font-size:15px;font-weight:900;color:#176b5b;margin-top:3px;line-height:1.5;">${esc(storeTitleText)}</div>`:""}
   </div>
 
-  <div style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;direction:rtl;">
-    <!-- مشتری -->
-    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;">
-      <div style="font-size:12px;color:#777;margin-bottom:4px;">👤 نام ${partyLabel}</div>
-      <div style="font-size:16px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.customer)}</div>
-      ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:5px;direction:rtl;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
-    </div>
-
-    <!-- وسط: آدرس و کد سفارش -->
-    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;direction:rtl;">
-      ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;">آدرس: <span style="font-size:12px;color:#111;white-space:nowrap;">${esc(addressText)}</span></div>`:""}
-      ${optionalOrderCode?`<div style="font-size:12px;color:#555;${optionalAddress?'margin-top:6px;':''}">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
-    </div>
-
-    <!-- شماره و تاریخ -->
-    <div style="flex:1;text-align:left;font-size:13px;line-height:2;color:#333;background:#f1f8f6;border-radius:12px;padding:9px 12px;direction:rtl;">
-      <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
-      <div><b>تاریخ:</b> ${i.date}</div>
+  <!-- سربرگ یکپارچه -->
+  <div style="border:1px solid #cfdad7;border-radius:10px;padding:10px 12px;background:#fff;direction:rtl;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:12px;align-items:stretch;">
+      <div style="text-align:right;min-width:0;">
+        <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
+        <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
+        ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
+      </div>
+      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 12px;">
+        ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
+        ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
+      </div>
+      <div style="text-align:right;min-width:0;line-height:1.9;font-size:12px;color:#333;">
+        <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
+        <div><b>تاریخ:</b> ${i.date}</div>
+      </div>
     </div>
   </div>
 
