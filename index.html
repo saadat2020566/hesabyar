@@ -185,8 +185,17 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
   #printableInvoice th,
   #printableInvoice td{
-    border:1px solid #999 !important;
+    border:1px solid #d7d7d7 !important;
     padding:7px !important;
+    text-align:center !important;
+  }
+
+  /* ستون‌های ردیف و مبلغ با خطوط خیلی کمرنگ‌تر */
+  #printableInvoice table th:first-child,
+  #printableInvoice table td:first-child,
+  #printableInvoice table th:last-child,
+  #printableInvoice table td:last-child{
+    border-color:#eeeeee !important;
   }
 
   #printableInvoice tr{
@@ -1190,11 +1199,11 @@ let rows=(r.data||[]).map((x, idx)=>{
   let modelName=parts[1]||"-";
   return `<tr>
     <td style="padding:8px;border:1px solid #ddd;text-align:center">${faNum(idx+1)}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${esc(typeName)}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${esc(modelName)}</td>
+    <td style="padding:8px;border:1px solid #ddd;text-align:center">${esc(typeName)}</td>
+    <td style="padding:8px;border:1px solid #ddd;text-align:center">${esc(modelName)}</td>
     <td style="padding:8px;border:1px solid #ddd;text-align:center">${faNum(x.quantity)}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${Number(fromToman(x.unit_price,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
-    <td style="padding:8px;border:1px solid #ddd;">${Number(fromToman(x.line_total,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
+    <td style="padding:8px;border:1px solid #ddd;text-align:center">${Number(fromToman(x.unit_price,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
+    <td style="padding:8px;border:1px solid #ddd;text-align:center">${Number(fromToman(x.line_total,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
   </tr>`;
 }).join("");
 
@@ -1368,11 +1377,11 @@ openModal(`
     <thead>
       <tr style="background:#eee;border-bottom:1px solid #ccc;">
         <th style="padding:8px;border:1px solid #ddd;text-align:center">ردیف</th>
-        <th style="padding:8px;border:1px solid #ddd;">نوع کالا</th>
-        <th style="padding:8px;border:1px solid #ddd;">مدل کالا</th>
+        <th style="padding:8px;border:1px solid #ddd;text-align:center">نوع کالا</th>
+        <th style="padding:8px;border:1px solid #ddd;text-align:center">مدل کالا</th>
         <th style="padding:8px;border:1px solid #ddd;text-align:center">تعداد</th>
-        <th style="padding:8px;border:1px solid #ddd;">قیمت واحد</th>
-        <th style="padding:8px;border:1px solid #ddd;">مبلغ کل</th>
+        <th style="padding:8px;border:1px solid #ddd;text-align:center">قیمت واحد</th>
+        <th style="padding:8px;border:1px solid #ddd;text-align:center">مبلغ کل</th>
       </tr>
     </thead>
     <tbody>
