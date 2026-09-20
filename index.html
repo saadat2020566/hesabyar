@@ -1012,7 +1012,7 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
   <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>${partyLabel}</label><select id="ic" class="input"><option value="">${isPurchase?"فروشنده متفرقه":"مشتری متفرقه"}</option>${opts}</select></div>
 </div>
-<div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
+<div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button type="button" class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
 <div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>درصد تخفیف (%)</span><input id="disc" class="input" type="number" value="0" min="0" max="100" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div>
 <div class="section" style="margin-top:12px;padding:10px 12px;background:#f7faf9;border:1px solid #e3ebe8;border-radius:12px;">
@@ -1045,7 +1045,7 @@ ${opts?`<div class="field full"><label>انتخاب از محصولات ثبت �
 <div class="field full"><label>تعداد</label><input id="subQty" class="input" type="number" min="1" value="1" oninput="onSubCalc()"></div>
 <div class="field full"><label>قیمت واحد</label><input id="subUnit" class="input" type="number" oninput="onSubCalc()"></div>
 <div class="field full"><label>قیمت کل</label><input id="subTotal" class="input" type="number" readonly style="background:#f4f7f6;font-weight:bold;color:#176b5b"></div>
-<br><button class="primary fullBtn" style="width:100%" onclick="confirmAddItem()">ثبت</button>`;
+<br><button type="button" class="primary fullBtn" style="width:100%" onclick="confirmAddItem()">ثبت</button>`;
 document.getElementById("subModal").classList.add("open");
 };
 
@@ -1142,6 +1142,7 @@ window.editInvoice=async id=>{
   window._invoiceType=type;
   // ابتدا فرم را بساز، سپس اقلام فاکتور قبلی را داخل آن قرار بده تا پاک نشوند.
   window.newInvoice(type);
+  window._editingInvoiceId=id;
   currentInvoiceItems=(rr.data||[]).map(x=>{
     const parts=String(x.product_name||"").split(" | مدل: ");
     const prodName=parts[0]||""; const model=parts[1]||"-";
@@ -1457,13 +1458,13 @@ openModal(`
 
   <!-- سربرگ یکپارچه -->
   <div style="border:1px solid #cfdad7;border-radius:10px;padding:10px 12px;background:#fff;direction:rtl;margin-bottom:14px;">
-    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:12px;align-items:stretch;">
+    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:6px;align-items:stretch;">
       <div style="text-align:right;min-width:0;">
         <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
         <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
         ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
       </div>
-      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 12px;">
+      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;">
         ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
         ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
       </div>
