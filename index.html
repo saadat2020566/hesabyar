@@ -972,6 +972,7 @@ const nextInvoiceNumber=(invoiceType)=>{
 
 window.newInvoice=(invoiceType="sale")=>{
 currentInvoiceItems=[];
+window._editingInvoiceId=null;
 window._invoiceType=invoiceType;
 const isPurchase=invoiceType==="purchase";
 const invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
@@ -1018,13 +1019,14 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
   <div style="font-weight:800;margin-bottom:8px;color:#176b5b">موارد اختیاری در چاپ فاکتور</div>
   <div class="form">
     <label style="display:flex;align-items:center;gap:7px"><input id="optStoreTitle" type="checkbox" checked> عنوان فروشگاه</label>
-    <label style="display:flex;align-items:center;gap:7px"><input id="optCustomerPhone" type="checkbox" checked> تلفن ${partyLabel}</label>
+    <label style="display:flex;align-items:center;gap:7px"><input id="optCustomerPhone" type="checkbox" checked> تلفن مشتری</label>
     <label style="display:flex;align-items:center;gap:7px"><input id="optAddress" type="checkbox"> آدرس</label>
     <label style="display:flex;align-items:center;gap:7px"><input id="optOrderCode" type="checkbox"> کد سفارش</label>
   </div>
   <div class="form" style="margin-top:8px">
     <div class="field"><label>عنوان فروشگاه</label><input id="invoiceStoreTitle" class="input" value="برف"></div>
     <div class="field"><label>آدرس</label><input id="invoiceAddress" class="input" placeholder="آدرس فروشگاه"></div>
+    <div class="field"><label>تلفن مشتری</label><input id="invoiceCustomerPhone" class="input" placeholder="تلفن مشتری"></div>
     <div class="field"><label>کد سفارش</label><input id="invoiceOrderCode" class="input" placeholder="کد سفارش"></div>
   </div>
   <div style="font-size:11px;color:#7b8783;margin-top:6px">فقط مواردی که تیک می‌زنید در فاکتور چاپ می‌شوند.</div>
@@ -1129,6 +1131,45 @@ if(document.getElementById("remain")) document.getElementById("remain").textCont
 }
 window.updateInvoiceTotals = updateInvoiceTotals;
 
+window.editInvoice=async id=>{
+  const inv=data.invoices.find(x=>String(x.id)===String(id));
+  if(!inv)return alert("فاکتور یافت نشد.");
+  const type=getInvoiceType(id)||"sale";
+  const rr=await sb.from("invoice_items").select("*").eq("invoice_id",id).eq("user_id",currentUser.id).order("id");
+  if(rr.error)return alert(rr.error.message);
+  window._editingInvoiceId=id;
+  window._invoiceType=type;
+  currentInvoiceItems=(rr.data||[]).map(x=>{
+    const parts=String(x.product_name||"").split(" | مدل: ");
+    const prodName=parts[0]||""; const model=parts[1]||"-";
+    const p=data.products.find(pp=>String(pp.id)===String(x.product_id))||{id:x.product_id,name:prodName,stock:0,buy:0,sell:0};
+    return {p,model,q:Number(x.quantity)||0,unit:fromToman(Number(x.unit_price)||0,getInvoiceCurrency(id)),total:fromToman(Number(x.line_total)||0,getInvoiceCurrency(id))};
+  });
+  window.newInvoice(type);
+  window._editingInvoiceId=id;
+  setTimeout(()=>{
+    const no=document.getElementById("invoiceNo"); if(no) no.value=String(Math.abs(Number(inv.no)||0)).replace(/\d/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+    const dt=document.getElementById("invDate"); if(dt) dt.value=inv.date||"";
+    const sel=document.getElementById("ic"); if(sel) sel.value=inv.customer_id?String(inv.customer_id):"";
+    const unit=getInvoiceCurrency(id);
+    const sub=currentInvoiceItems.reduce((a,b)=>a+b.total,0);
+    const total=fromToman(Number(inv.total)||0,unit);
+    const paid=fromToman(Number(inv.paid)||0,unit);
+    const discAmount=fromToman(Number(inv.discount)||0,unit);
+    const disc=sub?Math.round((discAmount/sub)*10000)/100:0;
+    const d=document.getElementById("disc"); if(d)d.value=disc;
+    const pa=document.getElementById("paid"); if(pa)pa.value=paid;
+    const opts=getInvoiceDisplayOptions(id);
+    const st=document.getElementById("invoiceStoreTitle"); if(st)st.value=opts.storeTitleText||"برف";
+    const ad=document.getElementById("invoiceAddress"); if(ad)ad.value=opts.addressText||"";
+    const ph=document.getElementById("invoiceCustomerPhone"); if(ph)ph.value=opts.customerPhoneText||"";
+    const oc=document.getElementById("invoiceOrderCode"); if(oc)oc.value=opts.orderCodeText||"";
+    for(const [el,val] of [["optStoreTitle",opts.storeTitle!==false],["optCustomerPhone",opts.customerPhone!==false],["optAddress",!!opts.address],["optOrderCode",!!opts.orderCode]]){const e=document.getElementById(el);if(e)e.checked=val;}
+    renderInvoiceItems(); updateInvoiceTotals();
+    const btn=document.querySelector('.fullBtn[onclick="saveInvoice()"]'); if(btn)btn.textContent="ذخیره تغییرات";
+  },0);
+};
+
 window.saveInvoice=async()=>{
 if(!currentInvoiceItems.length){alert("حداقل یک محصول اضافه کنید");return;}
 
@@ -1153,6 +1194,32 @@ let invoiceType=window._invoiceType||"sale";
 try{await normalizePurchaseInvoiceNumbers();}catch(e){return alert("خطا در آماده‌سازی شماره فاکتورهای خرید:\n"+e.message);}
 
 let storedInvoiceNo=invoiceType==="purchase" ? -Math.abs(no) : Math.abs(no);
+if(window._editingInvoiceId){
+  const editId=window._editingInvoiceId;
+  const oldInv=data.invoices.find(x=>String(x.id)===String(editId));
+  if(!oldInv)return alert("فاکتور برای ویرایش پیدا نشد.");
+  const oldItemsR=await sb.from("invoice_items").select("*").eq("invoice_id",editId).eq("user_id",currentUser.id);
+  if(oldItemsR.error)return alert(oldItemsR.error.message);
+  for(const x of (oldItemsR.data||[])){
+    if(x.product_id){
+      const p=data.products.find(pp=>String(pp.id)===String(x.product_id));
+      if(p){
+        const restored=invoiceType==="purchase" ? p.stock-Number(x.quantity||0) : p.stock+Number(x.quantity||0);
+        await sb.from("products").update({stock:restored}).eq("id",p.id).eq("user_id",currentUser.id);
+      }
+    }
+  }
+  let ur=await sb.from("invoices").update({invoice_no:storedInvoiceNo,invoice_date:invoiceDate,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:dbSub,discount:dbDiscount,total:dbTotal,paid:dbPay,remaining:dbRemaining}).eq("id",editId).eq("user_id",currentUser.id);
+  if(ur.error)return alert("خطا در ویرایش فاکتور:\n"+ur.error.message);
+  let dr=await sb.from("invoice_items").delete().eq("invoice_id",editId).eq("user_id",currentUser.id);
+  if(dr.error)return alert("خطا در به‌روزرسانی اقلام فاکتور:\n"+dr.error.message);
+  let ir2=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:editId,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:toToman(x.unit,invoiceUnit),line_total:toToman(x.total,invoiceUnit)})));
+  if(ir2.error)return alert("خطا در ثبت اقلام جدید:\n"+ir2.error.message);
+  for(const x of currentInvoiceItems){if(x.p.id){const p=data.products.find(pp=>String(pp.id)===String(x.p.id));const base=p?p.stock:0;const newStock=invoiceType==="purchase"?base+x.q:base-x.q;await sb.from("products").update({stock:newStock}).eq("id",x.p.id).eq("user_id",currentUser.id);}}
+  setInvoiceCurrency(editId,invoiceUnit);setInvoiceType(editId,invoiceType);
+  setInvoiceDisplayOptions(editId,{storeTitle:!!document.getElementById("optStoreTitle")?.checked,customerPhone:!!document.getElementById("optCustomerPhone")?.checked,address:!!document.getElementById("optAddress")?.checked,orderCode:!!document.getElementById("optOrderCode")?.checked,storeTitleText:(document.getElementById("invoiceStoreTitle")?.value||"برف").trim(),customerPhoneText:(document.getElementById("invoiceCustomerPhone")?.value||"").trim(),addressText:(document.getElementById("invoiceAddress")?.value||"").trim(),orderCodeText:(document.getElementById("invoiceOrderCode")?.value||"").trim()});
+  window._editingInvoiceId=null; await loadData(); closeModal(); showInvoice(editId); return;
+}
 let inv=await sb.from("invoices").insert({
   user_id:currentUser.id,
   invoice_no:storedInvoiceNo,
@@ -1203,6 +1270,7 @@ setInvoiceDisplayOptions(inv.data.id,{
   orderCode:!!document.getElementById("optOrderCode")?.checked,
   storeTitleText:(document.getElementById("invoiceStoreTitle")?.value||"برف").trim(),
   addressText:(document.getElementById("invoiceAddress")?.value||"").trim(),
+  customerPhoneText:(document.getElementById("invoiceCustomerPhone")?.value||"").trim(),
   orderCodeText:(document.getElementById("invoiceOrderCode")?.value||"").trim()
 });
 await loadData();closeModal();showInvoice(inv.data.id);
@@ -1258,7 +1326,7 @@ let invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
 let partyLabel=isPurchase?"فروشنده":"مشتری";
 let displayOpts=getInvoiceDisplayOptions(i.id);
 let party=data.customers.find(x=>String(x.id)===String(i.customer_id))||{};
-let partyPhone=party.phone||"";
+let partyPhone=displayOpts.customerPhoneText || party.phone || "";
 let storeTitleText=displayOpts.storeTitleText||"برف";
 let addressText=displayOpts.addressText||"";
 let orderCodeText=displayOpts.orderCodeText||"";
@@ -1390,7 +1458,7 @@ openModal(`
     <!-- مشتری -->
     <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;">
       <div style="font-size:12px;color:#777;margin-bottom:4px;">👤 نام ${partyLabel}</div>
-      <div style="font-size:16px;font-weight:bold;color:#111;">${esc(i.customer)}</div>
+      <div style="font-size:16px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.customer)}</div>
       ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:5px;direction:rtl;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
     </div>
 
@@ -1458,7 +1526,7 @@ openModal(`
 <br>
 <div class="noPrint" style="display:flex;gap:10px">
   <button class="secondary" onclick="window.print()">🖨 چاپ</button>
-  <button class="close" type="button" onclick="closeModal()" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بستن</button>
+  <button class="close" type="button" onclick="window.editInvoice('${i.id}')" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بازگشت برای ویرایش</button>
 </div>
 `);
 
