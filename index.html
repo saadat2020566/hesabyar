@@ -1013,7 +1013,23 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
 <div class="table"><table><thead><tr><th>نوع کالا</th><th>مدل</th><th>تعداد</th><th>قیمت واحد</th><th>قیمت کل</th><th></th></tr></thead><tbody id="invoiceItemsList"><tr><td colspan="6" style="text-align:center;color:#78837f">هنوز محصولی اضافه نشده است</td></tr></tbody></table></div>
-<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>درصد تخفیف (%)</span><input id="disc" class="input" type="number" value="0" min="0" max="100" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div><br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
+<div class="totals"><div class="tr"><span>جمع کالا</span><b id="sub">۰ تومان</b></div><div class="tr"><span>درصد تخفیف (%)</span><input id="disc" class="input" type="number" value="0" min="0" max="100" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr final"><span>مبلغ نهایی</span><b id="total">۰ تومان</b></div><div class="tr"><span>پرداخت</span><input id="paid" class="input" type="number" value="0" style="max-width:150px" oninput="updateInvoiceTotals()"></div><div class="tr"><span>مانده</span><b id="remain">۰ تومان</b></div></div>
+<div class="section" style="margin-top:12px;padding:10px 12px;background:#f7faf9;border:1px solid #e3ebe8;border-radius:12px;">
+  <div style="font-weight:800;margin-bottom:8px;color:#176b5b">موارد اختیاری در چاپ فاکتور</div>
+  <div class="form">
+    <label style="display:flex;align-items:center;gap:7px"><input id="optStoreTitle" type="checkbox" checked> عنوان فروشگاه</label>
+    <label style="display:flex;align-items:center;gap:7px"><input id="optCustomerPhone" type="checkbox" checked> تلفن ${partyLabel}</label>
+    <label style="display:flex;align-items:center;gap:7px"><input id="optAddress" type="checkbox"> آدرس</label>
+    <label style="display:flex;align-items:center;gap:7px"><input id="optOrderCode" type="checkbox"> کد سفارش</label>
+  </div>
+  <div class="form" style="margin-top:8px">
+    <div class="field"><label>عنوان فروشگاه</label><input id="invoiceStoreTitle" class="input" value="برف"></div>
+    <div class="field"><label>آدرس</label><input id="invoiceAddress" class="input" placeholder="آدرس فروشگاه"></div>
+    <div class="field"><label>کد سفارش</label><input id="invoiceOrderCode" class="input" placeholder="کد سفارش"></div>
+  </div>
+  <div style="font-size:11px;color:#7b8783;margin-top:6px">فقط مواردی که تیک می‌زنید در فاکتور چاپ می‌شوند.</div>
+</div>
+<br><button class="primary fullBtn" style="width:100%" onclick="saveInvoice()">صدور فاکتور</button>`);
 updateInvoiceTotals();
 };
 
@@ -1180,8 +1196,25 @@ if(c && invoiceType==="sale"){
 }
 setInvoiceCurrency(inv.data.id,invoiceUnit);
 setInvoiceType(inv.data.id,invoiceType);
+setInvoiceDisplayOptions(inv.data.id,{
+  storeTitle:!!document.getElementById("optStoreTitle")?.checked,
+  customerPhone:!!document.getElementById("optCustomerPhone")?.checked,
+  address:!!document.getElementById("optAddress")?.checked,
+  orderCode:!!document.getElementById("optOrderCode")?.checked,
+  storeTitleText:(document.getElementById("invoiceStoreTitle")?.value||"برف").trim(),
+  addressText:(document.getElementById("invoiceAddress")?.value||"").trim(),
+  orderCodeText:(document.getElementById("invoiceOrderCode")?.value||"").trim()
+});
 await loadData();closeModal();showInvoice(inv.data.id);
 };
+
+function getInvoiceDisplayOptions(id){
+  try{return JSON.parse(localStorage.getItem("barfInvoiceDisplayOptions")||"{}")[id]||{};}catch(e){return {};}
+}
+function setInvoiceDisplayOptions(id,opts){
+  let m={};try{m=JSON.parse(localStorage.getItem("barfInvoiceDisplayOptions")||"{}")}catch(e){}
+  m[id]=opts||{};localStorage.setItem("barfInvoiceDisplayOptions",JSON.stringify(m));
+}
 
 function getInvoiceSignature(id,role="seller"){
   try{const m=JSON.parse(localStorage.getItem("barfInvoiceSignatures")||"{}"); if(typeof m[id]==="object") return m[id]?.[role]||""; return role==="seller"?(m[id]||""):"";}catch(e){return "";}
@@ -1223,6 +1256,16 @@ let invoiceType=getInvoiceType(i.id);
 let isPurchase=invoiceType==="purchase";
 let invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
 let partyLabel=isPurchase?"فروشنده":"مشتری";
+let displayOpts=getInvoiceDisplayOptions(i.id);
+let party=data.customers.find(x=>String(x.id)===String(i.customer_id))||{};
+let partyPhone=party.phone||"";
+let storeTitleText=displayOpts.storeTitleText||"برف";
+let addressText=displayOpts.addressText||"";
+let orderCodeText=displayOpts.orderCodeText||"";
+let optionalStoreTitle=displayOpts.storeTitle!==false && storeTitleText;
+let optionalPartyPhone=displayOpts.customerPhone!==false && partyPhone;
+let optionalAddress=displayOpts.address && addressText;
+let optionalOrderCode=displayOpts.orderCode && orderCodeText;
 let r=await sb.from("invoice_items").select("*").eq("invoice_id",i.id).eq("user_id",currentUser.id).order("id");
 if(r.error)return alert(r.error.message);
 
@@ -1337,73 +1380,31 @@ openModal(`
            ">
   </div>
 
-  <!-- عنوان وسط -->
-  <div style="
-    text-align:center;
-    padding-top:5px;
-    margin-bottom:18px;
-  ">
-    <div style="
-      font-size:20px;
-      font-weight:800;
-      color:#176b5b;
-      line-height:1.5;
-    ">
-      ${invoiceTitle}
-    </div>
+  <!-- عنوان فاکتور و اطلاعات اختیاری -->
+  <div style="text-align:center;padding-top:5px;margin-bottom:12px;">
+    <div style="font-size:20px;font-weight:800;color:#176b5b;line-height:1.5;">${invoiceTitle}</div>
+    ${optionalStoreTitle?`<div style="font-size:11px;color:#666;margin-top:2px;">${esc(storeTitleText)}</div>`:""}
   </div>
 
-  <!-- اطلاعات فاکتور -->
-  <div style="
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:15px;
-  ">
-
-    <!-- سمت راست: مشتری -->
-    <div style="
-      flex:1;
-      background:#f1f8f6;
-      border-radius:12px;
-      padding:10px 14px;
-    ">
-      <div style="
-        font-size:12px;
-        color:#777;
-        margin-bottom:5px;
-      ">
-        👤 نام ${partyLabel}
-      </div>
-
-      <div style="
-        font-size:16px;
-        font-weight:bold;
-        color:#111;
-      ">
-        ${esc(i.customer)}
-      </div>
+  <div style="display:flex;justify-content:space-between;align-items:stretch;gap:12px;direction:rtl;">
+    <!-- مشتری -->
+    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:right;">
+      <div style="font-size:12px;color:#777;margin-bottom:4px;">👤 نام ${partyLabel}</div>
+      <div style="font-size:16px;font-weight:bold;color:#111;">${esc(i.customer)}</div>
+      ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:5px;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
     </div>
 
-    <!-- سمت چپ: تاریخ و شماره -->
-    <div style="
-      flex:1;
-      text-align:left;
-      font-size:13px;
-      line-height:2;
-      color:#333;
-    ">
-      <div>
-        <b>شماره فاکتور:</b>
-        ${faNum(i.no)}
-      </div>
-
-      <div>
-        <b>تاریخ:</b>
-        ${i.date}
-      </div>
+    <!-- وسط: آدرس و کد سفارش -->
+    <div style="flex:1;background:#f1f8f6;border-radius:12px;padding:9px 12px;text-align:center;">
+      ${optionalAddress?`<div style="font-size:12px;color:#555;">آدرس</div><div style="font-size:12px;color:#111;margin-top:3px;line-height:1.7;">${esc(addressText)}</div>`:""}
+      ${optionalOrderCode?`<div style="font-size:12px;color:#555;${optionalAddress?'margin-top:6px;':''}">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
     </div>
 
+    <!-- شماره و تاریخ -->
+    <div style="flex:1;text-align:left;font-size:13px;line-height:2;color:#333;background:#f1f8f6;border-radius:12px;padding:9px 12px;direction:rtl;">
+      <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
+      <div><b>تاریخ:</b> ${i.date}</div>
+    </div>
   </div>
 
   <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
