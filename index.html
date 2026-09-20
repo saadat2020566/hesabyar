@@ -190,6 +190,16 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     text-align:center !important;
   }
 
+  #printableInvoice table thead tr{
+    background:#e7f1f7 !important;
+  }
+  #printableInvoice table thead th{
+    font-size:13px !important;
+    font-weight:700 !important;
+    background:#e7f1f7 !important;
+    border-color:#d7e2e8 !important;
+  }
+
   /* ستون‌های ردیف و مبلغ با خطوط خیلی کمرنگ‌تر */
   #printableInvoice table th:first-child,
   #printableInvoice table td:first-child,
@@ -1375,13 +1385,13 @@ openModal(`
 
   <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
     <thead>
-      <tr style="background:#eee;border-bottom:1px solid #ccc;">
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">ردیف</th>
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">نوع کالا</th>
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">مدل کالا</th>
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">تعداد</th>
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">قیمت واحد</th>
-        <th style="padding:8px;border:1px solid #ddd;text-align:center">مبلغ کل</th>
+      <tr style="background:#e7f1f7;border-bottom:1px solid #d2e1ea;font-size:13px;font-weight:700;">
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">ردیف</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">نوع کالا</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">مدل کالا</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">تعداد</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">قیمت واحد</th>
+        <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:13px;font-weight:700">مبلغ کل</th>
       </tr>
     </thead>
     <tbody>
