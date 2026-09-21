@@ -985,7 +985,7 @@ const invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
 const partyLabel=isPurchase?"فروشنده":"مشتری";
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
 let defaultNo=nextInvoiceNumber(invoiceType);
-let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
+let defaultDate=new Date().toISOString().slice(0,10);
 window._invoiceCurrency=appCurrency();
 
 openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="newInvoiceChooser()">×</button></div>
@@ -1015,7 +1015,7 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
     "
   >
 </div>
-  <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
+  <div class="field"><label>تاریخ</label><input id="invDate" class="input" type="date" value="${defaultDate}"></div>
   <div class="field full"><label>${partyLabel}</label><select id="ic" class="input"><option value="">${isPurchase?"فروشنده متفرقه":"مشتری متفرقه"}</option>${opts}</select></div>
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button type="button" class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
