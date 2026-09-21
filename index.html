@@ -438,6 +438,7 @@ const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
 let invoiceViewing=false;
+let invoiceFormViewing=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
 
 const nav=p=>{
@@ -458,6 +459,11 @@ window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
   if(invoiceViewing){
     invoiceViewing=false;
+    closeModal();
+    return;
+  }
+  if(invoiceFormViewing){
+    invoiceFormViewing=false;
     closeModal();
     return;
   }
@@ -977,6 +983,8 @@ const nextInvoiceNumber=(invoiceType)=>{
 };
 
 window.newInvoice=(invoiceType="sale")=>{
+invoiceFormViewing=true;
+try{ history.pushState({barfInvoiceForm:true,page:currentPage,invoiceType},"",homeUrl()+"#invoice-form"); }catch(e){}
 currentInvoiceItems=[];
 window._editingInvoiceId=null;
 window._invoiceType=invoiceType;
