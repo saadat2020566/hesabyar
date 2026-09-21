@@ -83,7 +83,17 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
 .authLogo{width:64px;height:64px;border-radius:18px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:auto}
 .authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}.recoveryBtn{width:100%;margin-top:8px;padding:9px 12px;font-size:13px}
-</style><style>
+</style>
+<style id="invoiceLogoControlsStyle">
+.invoice-logo-wrap{position:absolute;right:0;top:58px;width:96px;text-align:center;z-index:5;}
+.invoice-logo-inner{position:relative;display:inline-flex;align-items:center;gap:3px;}
+.invoice-logo-preview-box{width:var(--logo-size,78px);height:var(--logo-size,78px);display:flex;align-items:center;justify-content:center;background:transparent;}
+.invoice-logo-preview-box img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
+.invoice-logo-size-controls{display:flex;flex-direction:column;gap:2px;}
+.invoice-logo-size-controls button{width:20px;height:20px;line-height:18px;padding:0;border:1px solid #d6dfdc;border-radius:5px;background:#fff;color:#176b5b;font-weight:800;font-size:13px;}
+@media print{.invoice-logo-size-controls{display:none!important}.invoice-logo-wrap{right:0!important;top:58px!important;width:auto!important}.invoice-logo-preview-box{width:var(--logo-size,78px)!important;height:var(--logo-size,78px)!important}.invoice-logo-preview-box img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}.invoice-logo-print{display:block!important;visibility:visible!important;width:var(--logo-size,78px)!important;height:var(--logo-size,78px)!important;max-width:none!important;max-height:none!important;object-fit:contain!important}}
+</style>
+<style>
 @page{size:A4 portrait;margin:0}
 @media print{
   #invoiceLogoWrap.noLogo{display:none!important;}
@@ -159,10 +169,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   }
 
   #printableInvoice #invoiceLogoWrap.noLogo{display:none!important;}
-  #printableInvoice #invoiceLogoWrap{display:block!important;visibility:visible!important;background:transparent!important;right:0!important;left:auto!important;top:64px!important;width:auto!important;}
-  #printableInvoice #invoiceLogoWrap label,#printableInvoice #invoiceLogoText{display:none!important;}
-  #printableInvoice #invoiceLogoPreview{display:none!important;}
-  #printableInvoice #invoiceLogoPrint{display:block!important;visibility:visible!important;max-width:none!important;max-height:none!important;margin:0!important;}
+  #printableInvoice #invoiceLogoWrap{background:transparent!important;}
+  #printableInvoice #invoiceLogoWrap label,#printableInvoice #invoiceLogoPreview,#printableInvoice #invoiceLogoText{display:none!important;}
+  #printableInvoice #invoiceLogoPrint{display:block!important;visibility:visible!important;}
   #printableInvoice #invoiceSignatureBlock.noSignature{display:none!important;}
   #printableInvoice #invoiceSignatureLabel{display:none!important;}
   #printableInvoice #invoiceSignatureBlock,
@@ -174,7 +183,6 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     display:block !important;
     visibility:visible !important;
   }
-  #printableInvoice #invoiceLogoWrap .noPrint{display:none!important;}
 
   #printableInvoice table{
     width:100% !important;
@@ -1372,21 +1380,23 @@ openModal(`
   direction:rtl;
 ">
 
-  <!-- لوگو: سمت راست و خارج از کادر اطلاعات، چسبیده به بالای کادر -->
-  <div id="invoiceLogoWrap" class="noLogo" style="position:absolute;right:0;top:64px;width:86px;text-align:center;z-index:5;">
-    <div style="position:relative;width:86px;display:flex;flex-direction:column;align-items:center;">
-      <label for="invoiceLogoInput" style="display:block;width:76px;height:76px;border:none;background:transparent;border-radius:0;cursor:pointer;padding:0;">
-        <img id="invoiceLogoPreview" src="" style="width:76px;height:76px;object-fit:contain;border-radius:8px;display:none;">
-        <div id="invoiceLogoText" class="noPrint" style="color:#176b5b;font-size:11px;font-weight:bold;padding-top:18px;">🖼️<br>انتخاب لوگو</div>
-      </label>
-      <img id="invoiceLogoPrint" src="" alt="" style="display:none;width:76px;height:76px;object-fit:contain;">
-      <div class="noPrint" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px;direction:ltr;">
-        <button type="button" onclick="changeInvoiceLogoSize(-6)" style="width:22px;height:22px;border:1px solid #cfdad7;border-radius:50%;background:#fff;color:#176b5b;font-weight:bold;padding:0;line-height:20px;">−</button>
-        <button type="button" onclick="changeInvoiceLogoSize(6)" style="width:22px;height:22px;border:1px solid #cfdad7;border-radius:50%;background:#fff;color:#176b5b;font-weight:bold;padding:0;line-height:20px;">+</button>
+  <!-- لوگو: سمت راست، خارج از کادر اطلاعات -->
+  <div id="invoiceLogoWrap" class="invoice-logo-wrap noLogo" style="--logo-size:78px;">
+    <div class="invoice-logo-inner">
+      <div class="invoice-logo-preview-box">
+        <label for="invoiceLogoInput" class="noPrint" style="display:block;width:100%;height:100%;cursor:pointer;">
+          <img id="invoiceLogoPreview" src="" style="width:100%;height:100%;object-fit:contain;border-radius:8px;display:none;">
+          <div id="invoiceLogoText" class="noPrint" style="color:#176b5b;font-size:12px;font-weight:bold;padding-top:24px;">انتخاب لوگو</div>
+        </label>
+        <img id="invoiceLogoPrint" class="invoice-logo-print" src="" alt="" style="display:none;">
       </div>
-      <button id="removeInvoiceLogoBtn" class="noPrint" type="button" onclick="removeInvoiceLogo()" style="display:none;position:absolute;right:-4px;top:-4px;width:20px;height:20px;padding:0;border:none;border-radius:50%;background:#e53935;color:#fff;font-size:15px;line-height:20px;text-align:center;cursor:pointer;z-index:10;">×</button>
+      <div class="invoice-logo-size-controls noPrint" aria-label="اندازه لوگو">
+        <button type="button" onclick="changeInvoiceLogoSize(8)" title="بزرگتر">+</button>
+        <button type="button" onclick="changeInvoiceLogoSize(-8)" title="کوچکتر">−</button>
+      </div>
+      <button id="removeInvoiceLogoBtn" class="noPrint" type="button" onclick="removeInvoiceLogo()" style="display:none;position:absolute;left:-8px;top:2px;width:19px;height:19px;padding:0;border:none;border-radius:50%;background:#e53935;color:#fff;font-size:15px;line-height:19px;text-align:center;cursor:pointer;z-index:10;">×</button>
     </div>
-    <input id="invoiceLogoInput" class="noPrint" type="file" accept="image/*" style="display:none">
+    <input id="invoiceLogoInput" class="noPrint" type="file" accept="image/*" style="display:none" onchange="handleInvoiceLogoFile(this)">
   </div>
 
   <!-- عنوان فاکتور خارج از کادر -->
@@ -1396,20 +1406,20 @@ openModal(`
   </div>
 
   <!-- سربرگ یکپارچه -->
-  <div style="border:1px solid #cfdad7;border-radius:10px;padding:8px 96px 8px 10px;background:#fff;direction:rtl;margin-bottom:10px;">
-    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:2px;align-items:stretch;">
-      <div style="text-align:right;min-width:0;">
-        <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
-        <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
-        ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
+  <div style="border:1px solid #cfdad7;border-radius:10px;padding:8px 10px;background:#fff;direction:rtl;margin-bottom:10px;">
+    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:2px;align-items:stretch;direction:ltr;">
+      <div style="text-align:left;min-width:0;line-height:1.9;font-size:12px;color:#333;direction:rtl;">
+        <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
+        <div><b>تاریخ:</b> ${i.date}</div>
       </div>
-      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;">
+      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;direction:rtl;">
         ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
         ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
       </div>
-      <div style="text-align:right;min-width:0;line-height:1.9;font-size:12px;color:#333;">
-        <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
-        <div><b>تاریخ:</b> ${i.date}</div>
+      <div style="text-align:right;min-width:0;direction:rtl;">
+        <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
+        <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
+        ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
       </div>
     </div>
   </div>
@@ -1476,36 +1486,59 @@ const sellerImg=document.getElementById("invoiceSellerSignatureImage");
 if(customerSignature&&customerImg){customerImg.src=customerSignature;customerImg.style.display="block";}
 if(sellerSignature&&sellerImg){sellerImg.src=sellerSignature;sellerImg.style.display="block";}
 
-let _invoiceLogoSize=76;
-try{_invoiceLogoSize=Math.max(52,Math.min(120,Number(localStorage.getItem("barfInvoiceLogoSize"))||76));}catch(e){}
 window.changeInvoiceLogoSize=function(delta){
-  _invoiceLogoSize=Math.max(52,Math.min(120,_invoiceLogoSize+Number(delta||0)));
-  localStorage.setItem("barfInvoiceLogoSize",String(_invoiceLogoSize));
-  ["invoiceLogoPreview","invoiceLogoPrint"].forEach(id=>{const el=document.getElementById(id);if(el){el.style.width=_invoiceLogoSize+"px";el.style.height=_invoiceLogoSize+"px";}});
+  const wrap=document.getElementById("invoiceLogoWrap");
+  if(!wrap)return;
+  let size=Number(localStorage.getItem("barfInvoiceLogoSize")||78)+Number(delta||0);
+  size=Math.max(44,Math.min(140,size));
+  localStorage.setItem("barfInvoiceLogoSize",String(size));
+  wrap.style.setProperty("--logo-size",size+"px");
 };
 window.removeInvoiceLogo=function(){
   localStorage.removeItem("barfInvoiceLogo");
-  const img=document.getElementById("invoiceLogoPreview"),pr=document.getElementById("invoiceLogoPrint"),text=document.getElementById("invoiceLogoText"),wrap=document.getElementById("invoiceLogoWrap"),input=document.getElementById("invoiceLogoInput"),rm=document.getElementById("removeInvoiceLogoBtn");
-  if(img){img.src="";img.style.display="none";} if(pr){pr.src="";pr.style.display="none";} if(text)text.style.display="block"; if(wrap)wrap.classList.add("noLogo"); if(input)input.value=""; if(rm)rm.style.display="none";
+  const img=document.getElementById("invoiceLogoPreview");
+  const print=document.getElementById("invoiceLogoPrint");
+  const text=document.getElementById("invoiceLogoText");
+  const wrap=document.getElementById("invoiceLogoWrap");
+  const btn=document.getElementById("removeInvoiceLogoBtn");
+  if(img){img.src="";img.style.display="none";}
+  if(print){print.src="";print.style.display="none";}
+  if(text)text.style.display="block";
+  if(wrap)wrap.classList.add("noLogo");
+  if(btn)btn.style.display="none";
+  const input=document.getElementById("invoiceLogoInput"); if(input)input.value="";
 };
-const logoInput=document.getElementById("invoiceLogoInput");
-if(logoInput){logoInput.onchange=function(){const file=this.files&&this.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){
-  const src=e.target.result; localStorage.setItem("barfInvoiceLogo",src);
-  const img=document.getElementById("invoiceLogoPreview"),pr=document.getElementById("invoiceLogoPrint"),text=document.getElementById("invoiceLogoText"),rm=document.getElementById("removeInvoiceLogoBtn"),wrap=document.getElementById("invoiceLogoWrap");
-  if(img){img.src=src;img.style.display="block";img.style.width=_invoiceLogoSize+"px";img.style.height=_invoiceLogoSize+"px";} if(pr){pr.src=src;pr.style.display="block";pr.style.width=_invoiceLogoSize+"px";pr.style.height=_invoiceLogoSize+"px";} if(text)text.style.display="none"; if(rm)rm.style.display="block"; if(wrap)wrap.classList.remove("noLogo");
-};reader.readAsDataURL(file);};}
+window.handleInvoiceLogoFile=function(input){
+  const file=input?.files?.[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const src=e.target.result;
+    localStorage.setItem("barfInvoiceLogo",src);
+    const img=document.getElementById("invoiceLogoPreview");
+    const print=document.getElementById("invoiceLogoPrint");
+    const text=document.getElementById("invoiceLogoText");
+    const wrap=document.getElementById("invoiceLogoWrap");
+    const btn=document.getElementById("removeInvoiceLogoBtn");
+    if(img){img.src=src;img.style.display="block";}
+    if(print){print.src=src;print.style.display="block";}
+    if(text)text.style.display="none";
+    if(wrap)wrap.classList.remove("noLogo");
+    if(btn)btn.style.display="block";
+  };
+  reader.readAsDataURL(file);
+};
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
+const savedLogoSize=Number(localStorage.getItem("barfInvoiceLogoSize")||78);
 const logoImg=document.getElementById("invoiceLogoPreview");
 const logoPrint=document.getElementById("invoiceLogoPrint");
 const logoText=document.getElementById("invoiceLogoText");
 const logoRemove=document.getElementById("removeInvoiceLogoBtn");
 const logoWrap=document.getElementById("invoiceLogoWrap");
+if(logoWrap) logoWrap.style.setProperty("--logo-size",Math.max(44,Math.min(140,savedLogoSize))+"px");
 if(savedLogo && logoImg){
   logoImg.src=savedLogo;
   logoImg.style.display="block";
-  logoImg.style.width=_invoiceLogoSize+"px";
-  logoImg.style.height=_invoiceLogoSize+"px";
-  if(logoPrint){logoPrint.src=savedLogo;logoPrint.style.display="block";logoPrint.style.width=_invoiceLogoSize+"px";logoPrint.style.height=_invoiceLogoSize+"px";}
+  if(logoPrint){logoPrint.src=savedLogo;logoPrint.style.display="block";}
   if(logoText) logoText.style.display="none";
   if(logoRemove) logoRemove.style.display="block";
   if(logoWrap) logoWrap.classList.remove("noLogo");
