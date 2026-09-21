@@ -502,7 +502,7 @@ window.doLogin=async function(){
  if(!email||!password)return authScreen("ایمیل و رمز عبور را وارد کنید.");
  try{
    const r=await sb.auth.signInWithPassword({email,password});
-   if(r.error){ const msg=String(r.error.message||r.error||""); if(/fetch|failed to fetch|network|networkerror|failed to load|connection|offline/i.test(msg))return authScreen("اینترنت خود را بررسی کنید"); return authScreen("ورود ناموفق بود: "+msg); }
+   if(r.error){ const msg=String(r.error.message||r.error||""); if(!navigator.onLine || /fetch|failed to fetch|network|networkerror|failed to load|connection|offline|load failed|network request failed/i.test(msg)) return authScreen("اینترنت خود را بررسی کنید"); return authScreen("ورود ناموفق بود: "+msg); }
    currentUser=r.data.user;
    document.body.classList.remove("authMode");
    try{await loadData();render("home");}
