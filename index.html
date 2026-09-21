@@ -74,20 +74,6 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .jalaliTodayBtn{border:0;background:#e8f5f1;color:#176b5b;border-radius:10px;padding:9px 13px;font-weight:700;cursor:pointer}
 
 </style>
-
-<style id="invoiceReadabilityFix">
-#printableInvoice{font-size:14px!important;}
-#printableInvoice table{font-size:14px!important;}
-#printableInvoice table th{font-size:15px!important;font-weight:700!important;}
-#printableInvoice table td{font-size:14px!important;}
-#printableInvoice .invoiceHeader{font-size:14px!important;}
-@media print{
-  #printableInvoice{font-size:14px!important;}
-  #printableInvoice table{font-size:14px!important;}
-  #printableInvoice th{font-size:15px!important;}
-  #printableInvoice td{font-size:14px!important;}
-}
-</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -324,7 +310,20 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   #printableInvoice #invoiceSellerSignatureImage[src]:not([src=""]){display:block!important;}
   #invoiceSignatureBlock .noPrint{display:none!important;visibility:hidden!important;}
 }
-</style></head></head>
+</style>
+<style id="invoiceReadableFontFix">
+@media print{
+  #printableInvoice{font-size:14px !important;}
+  #printableInvoice .invoiceHeader{font-size:14px !important;}
+  #printableInvoice .invoiceHeader > div{font-size:inherit !important;}
+  #printableInvoice table{font-size:14px !important;}
+  #printableInvoice table th{font-size:15px !important;font-weight:700 !important;}
+  #printableInvoice table td{font-size:14px !important;}
+  #printableInvoice table th,#printableInvoice table td{padding:8px !important;}
+  #printableInvoice .signatureLabel{font-size:14px !important;}
+}
+</style>
+</head></head>
 <style>
 #splash{
   position:fixed;
@@ -1480,17 +1479,17 @@ openModal(`
 
   <!-- سربرگ یکپارچه -->
   <div style="border:1px solid #cfdad7;border-radius:10px;padding:8px 10px;background:#fff;direction:rtl;margin-bottom:10px;">
-    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:0;align-items:stretch;direction:ltr;">
-      <div style="text-align:right;min-width:0;grid-column:3;direction:rtl;">
-        <div style="font-size:13px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
-        <div style="font-size:17px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
-        ${optionalPartyPhone?`<div style="font-size:13px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
+    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:2px;align-items:stretch;">
+      <div style="text-align:right;min-width:0;">
+        <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
+        <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
+        ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
       </div>
-      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;grid-column:2;direction:rtl;">
-        ${optionalAddress?`<div style="font-size:13px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
-        ${optionalOrderCode?`<div style="font-size:13px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
+      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;">
+        ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
+        ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
       </div>
-      <div style="text-align:left;min-width:0;line-height:1.9;font-size:14px;color:#333;grid-column:1;direction:rtl;">
+      <div style="text-align:right;min-width:0;line-height:1.9;font-size:12px;color:#333;">
         <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
         <div><b>تاریخ:</b> ${i.date}</div>
       </div>
