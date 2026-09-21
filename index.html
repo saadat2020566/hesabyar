@@ -500,15 +500,19 @@ window.doLogin=async function(){
  const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
  const password=document.getElementById("authPass")?.value||"";
  if(!email||!password)return authScreen("ایمیل و رمز عبور را وارد کنید.");
+ if(navigator.onLine===false)return authScreen("اینترنت خود را بررسی کنید");
  try{
-   const r=await sb.auth.signInWithPassword({email,password});
-   if(r.error){ const msg=String(r.error.message||r.error||""); if(!navigator.onLine || /fetch|failed to fetch|network|networkerror|failed to load|connection|offline|load failed|network request failed/i.test(msg)) return authScreen("اینترنت خود را بررسی کنید"); return authScreen("ورود ناموفق بود: "+msg); }
+   const r=await Promise.race([
+     sb.auth.signInWithPassword({email,password}),
+     new Promise((_,reject)=>setTimeout(()=>reject(new Error("NETWORK_TIMEOUT")),7000))
+   ]);
+   if(r.error){ return authScreen(/fetch|failed to fetch|network|networkerror|failed to load|connection|offline|timeout/i.test(String(r.error.message||r.error||"")) ? "اینترنت خود را بررسی کنید" : "ورود ناموفق بود: "+r.error.message); }
    currentUser=r.data.user;
    document.body.classList.remove("authMode");
    try{await loadData();render("home");}
    catch(e){authScreen("بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
  }catch(e){
-   authScreen("ارتباط با سرور انجام نشد. اینترنت را بررسی کنید.");
+   authScreen("اینترنت خود را بررسی کنید");
  }
 };
 window.changeAppCurrency=unit=>{if(unit!=="تومان"&&unit!=="ریال")return;localStorage.setItem("barfCurrency",unit);render(currentPage||"home",false);};
