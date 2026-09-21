@@ -1353,11 +1353,11 @@ let rows=(r.data||[]).map((x, idx)=>{
   let modelName=parts[1]||"-";
   return `<tr>
     <td style="padding:8px;border:1px solid #ddd;text-align:center">${faNum(idx+1)}</td>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">${esc(typeName)}</td>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">${esc(modelName)}</td>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">${faNum(x.quantity)}</td>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">${Number(fromToman(x.unit_price,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
-    <td style="padding:8px;border:1px solid #ddd;text-align:center">${Number(fromToman(x.line_total,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
+    <td style="padding:9px;border:1px solid #ddd;text-align:center;font-size:14px;font-weight:600">${esc(typeName)}</td>
+    <td style="padding:9px;border:1px solid #ddd;text-align:center;font-size:14px;font-weight:600">${esc(modelName)}</td>
+    <td style="padding:9px;border:1px solid #ddd;text-align:center;font-size:14px;font-weight:600">${faNum(x.quantity)}</td>
+    <td style="padding:9px;border:1px solid #ddd;text-align:center;font-size:14px;font-weight:600">${Number(fromToman(x.unit_price,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
+    <td style="padding:9px;border:1px solid #ddd;text-align:center;font-size:14px;font-weight:700">${Number(fromToman(x.line_total,invoiceUnit)||0).toLocaleString("fa-IR")}</td>
   </tr>`;
 }).join("");
 
@@ -1395,26 +1395,24 @@ openModal(`
     ${optionalStoreTitle?`<div style="font-size:15px;font-weight:900;color:#176b5b;margin-top:3px;line-height:1.5;">${esc(storeTitleText)}</div>`:""}
   </div>
 
-  <!-- سربرگ یکپارچه -->
-  <div style="border:1px solid #cfdad7;border-radius:10px;padding:8px 96px 8px 10px;background:#fff;direction:rtl;margin-bottom:10px;">
-    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:2px;align-items:stretch;">
-      <div style="text-align:right;min-width:0;">
-        <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
-        <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
-        ${optionalPartyPhone?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
-      </div>
-      <div style="text-align:right;min-width:0;border-right:1px solid #e3e9e7;border-left:1px solid #e3e9e7;padding:0 7px;">
-        ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
-        ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
-      </div>
-      <div style="text-align:right;min-width:0;line-height:1.9;font-size:12px;color:#333;">
-        <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
-        <div><b>تاریخ:</b> ${i.date}</div>
-      </div>
+  <!-- سه کادر متصل اطلاعات فاکتور -->
+  <div style="display:grid;grid-template-columns:1fr 1.45fr 1fr;direction:ltr;margin-bottom:12px;">
+    <div style="border:1.5px solid #aebfbb;border-radius:8px 0 0 8px;padding:10px 12px;background:#fff;direction:rtl;text-align:right;min-height:58px;">
+      <div style="font-size:14px;color:#555;margin-bottom:4px;font-weight:700;">👤 نام ${partyLabel}</div>
+      <div style="font-size:17px;font-weight:800;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.7;">${esc(i.customer)}</div>
+      ${optionalPartyPhone?`<div style="font-size:14px;color:#444;margin-top:3px;white-space:nowrap;">تلفن: ${esc(faNum(partyPhone))}</div>`:""}
+    </div>
+    <div style="border-top:1.5px solid #aebfbb;border-bottom:1.5px solid #aebfbb;border-right:0;border-left:0;padding:10px 12px;background:#fff;direction:rtl;text-align:right;min-height:58px;">
+      ${optionalAddress?`<div style="font-size:14px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="font-size:16px;color:#111;font-weight:600;">${esc(addressText)}</span></div>`:""}
+      ${optionalOrderCode?`<div style="font-size:14px;color:#555;margin-top:4px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-size:16px;font-weight:800;">${esc(faNum(orderCodeText))}</span></div>`:""}
+    </div>
+    <div style="border:1.5px solid #aebfbb;border-radius:0 8px 8px 0;padding:10px 12px;background:#fff;direction:rtl;text-align:right;min-height:58px;line-height:2;font-size:15px;color:#222;">
+      <div><b>شماره فاکتور:</b> <span style="font-size:17px;font-weight:800;">${faNum(i.no)}</span></div>
+      <div><b>تاریخ:</b> <span style="font-size:16px;font-weight:700;">${i.date}</span></div>
     </div>
   </div>
 
-  <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:14px;">
     <thead>
       <tr style="background:#d9ecf7 !important;background-color:#d9ecf7 !important;border-bottom:1px solid #c7dce8;font-size:14px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
         <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">ردیف</th>
