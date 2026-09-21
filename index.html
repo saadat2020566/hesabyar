@@ -159,7 +159,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   }
 
   #printableInvoice #invoiceLogoWrap.noLogo{display:none!important;}
-  #printableInvoice #invoiceLogoWrap{display:block!important;visibility:visible!important;background:transparent!important;right:0!important;left:auto!important;top:64px!important;width:auto!important;}
+  #printableInvoice #invoiceLogoWrap{display:block!important;visibility:visible!important;background:transparent!important;right:0!important;left:auto!important;top:62px!important;width:76px!important;}
   #printableInvoice #invoiceLogoWrap label,#printableInvoice #invoiceLogoText{display:none!important;}
   #printableInvoice #invoiceLogoPreview{display:none!important;}
   #printableInvoice #invoiceLogoPrint{display:block!important;visibility:visible!important;max-width:none!important;max-height:none!important;margin:0!important;}
@@ -1373,8 +1373,8 @@ openModal(`
 ">
 
   <!-- لوگو: سمت راست و خارج از کادر اطلاعات، چسبیده به بالای کادر -->
-  <div id="invoiceLogoWrap" class="noLogo" style="position:absolute;right:0;top:64px;width:86px;text-align:center;z-index:5;">
-    <div style="position:relative;width:86px;display:flex;flex-direction:column;align-items:center;">
+  <div id="invoiceLogoWrap" class="noLogo" style="position:absolute;right:0;top:62px;width:76px;text-align:center;z-index:5;">
+    <div style="position:relative;width:76px;display:flex;flex-direction:column;align-items:center;">
       <label for="invoiceLogoInput" style="display:block;width:76px;height:76px;border:none;background:transparent;border-radius:0;cursor:pointer;padding:0;">
         <img id="invoiceLogoPreview" src="" style="width:76px;height:76px;object-fit:contain;border-radius:8px;display:none;">
         <div id="invoiceLogoText" class="noPrint" style="color:#176b5b;font-size:11px;font-weight:bold;padding-top:18px;">🖼️<br>انتخاب لوگو</div>
@@ -1492,7 +1492,7 @@ const logoInput=document.getElementById("invoiceLogoInput");
 if(logoInput){logoInput.onchange=function(){const file=this.files&&this.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){
   const src=e.target.result; localStorage.setItem("barfInvoiceLogo",src);
   const img=document.getElementById("invoiceLogoPreview"),pr=document.getElementById("invoiceLogoPrint"),text=document.getElementById("invoiceLogoText"),rm=document.getElementById("removeInvoiceLogoBtn"),wrap=document.getElementById("invoiceLogoWrap");
-  if(img){img.src=src;img.style.display="block";img.style.width=_invoiceLogoSize+"px";img.style.height=_invoiceLogoSize+"px";} if(pr){pr.src=src;pr.style.display="block";pr.style.width=_invoiceLogoSize+"px";pr.style.height=_invoiceLogoSize+"px";} if(text)text.style.display="none"; if(rm)rm.style.display="block"; if(wrap)wrap.classList.remove("noLogo");
+  if(img){img.src=src;img.style.display="block";img.style.width=_invoiceLogoSize+"px";img.style.height=_invoiceLogoSize+"px";} if(pr){pr.src=src;pr.style.display="none";pr.style.width=_invoiceLogoSize+"px";pr.style.height=_invoiceLogoSize+"px";} if(text)text.style.display="none"; if(rm)rm.style.display="block"; if(wrap)wrap.classList.remove("noLogo");
 };reader.readAsDataURL(file);};}
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
@@ -1505,7 +1505,7 @@ if(savedLogo && logoImg){
   logoImg.style.display="block";
   logoImg.style.width=_invoiceLogoSize+"px";
   logoImg.style.height=_invoiceLogoSize+"px";
-  if(logoPrint){logoPrint.src=savedLogo;logoPrint.style.display="block";logoPrint.style.width=_invoiceLogoSize+"px";logoPrint.style.height=_invoiceLogoSize+"px";}
+  if(logoPrint){logoPrint.src=savedLogo;logoPrint.style.display="none";logoPrint.style.width=_invoiceLogoSize+"px";logoPrint.style.height=_invoiceLogoSize+"px";}
   if(logoText) logoText.style.display="none";
   if(logoRemove) logoRemove.style.display="block";
   if(logoWrap) logoWrap.classList.remove("noLogo");
