@@ -130,13 +130,14 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   #printableInvoice{
     display:block !important;
     visibility:visible !important;
-    width:190mm !important;
-    height:277mm !important;
-    max-width:190mm !important;
-    max-height:277mm !important;
+    width:200mm !important;
+    height:287mm !important;
+    max-width:200mm !important;
+    max-height:287mm !important;
+    box-sizing:border-box !important;
     overflow:hidden !important;
     margin:0 auto !important;
-    padding:6mm !important;
+    padding:4mm !important;
     background:#fff !important;
     box-shadow:none !important;
     border-radius:0 !important;
@@ -160,9 +161,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
   #printableInvoice #invoiceLogoWrap.noLogo{display:none!important;}
   #printableInvoice #invoiceLogoWrap{background:transparent!important;}
-  #printableInvoice #invoiceLogoWrap label{display:block!important;visibility:visible!important;}
-  #printableInvoice #invoiceLogoPreview{display:block!important;visibility:visible!important;max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;object-fit:contain!important;}
-  #printableInvoice #invoiceLogoText,#printableInvoice #removeInvoiceLogoBtn,#printableInvoice #invoiceLogoResizeHandle{display:none!important;visibility:hidden!important;}
+  #printableInvoice #invoiceLogoWrap label,#printableInvoice #invoiceLogoPreview,#printableInvoice #invoiceLogoText{display:none!important;}
+  #printableInvoice #invoiceLogoSizeControls{display:none!important;}
+  #printableInvoice #invoiceLogoPrint{display:block!important;visibility:visible!important;width:var(--invoice-logo-size,78px)!important;height:var(--invoice-logo-size,78px)!important;max-width:none!important;max-height:none!important;object-fit:contain!important;}
   #printableInvoice #invoiceSignatureBlock.noSignature{display:none!important;}
   #printableInvoice #invoiceSignatureLabel{display:none!important;}
   #printableInvoice #invoiceSignatureBlock,
@@ -173,11 +174,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   #printableInvoice img{
     display:block !important;
     visibility:visible !important;
-    max-width:60px !important;
-    max-height:60px !important;
+    max-width:none !important;
+    max-height:none !important;
   }
-
-  #printableInvoice #invoiceLogoWrap img#invoiceLogoPreview{max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;}
 
   #printableInvoice table{
     width:100% !important;
@@ -189,8 +188,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   #printableInvoice th,
   #printableInvoice td{
     border:1px solid #d7d7d7 !important;
-    padding:7px !important;
+    padding:8px !important;
     text-align:center !important;
+    font-size:13px !important;
   }
 
   #printableInvoice table thead tr,
@@ -201,7 +201,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
     print-color-adjust:exact !important;
   }
   #printableInvoice table thead th{
-    font-size:14px !important;
+    font-size:15px !important;
     font-weight:700 !important;
     border-color:#d7e2e8 !important;
   }
@@ -1378,17 +1378,17 @@ openModal(`
   <!-- لوگو -->
   <div id="invoiceLogoWrap" class="noLogo" style="
     position:absolute;
-    right:0;
+    left:0;
     top:0;
-    width:90px;
+    width:65px;
     text-align:center;
   ">
-    <div id="invoiceLogoStage" style="position:relative;width:90px;height:90px;display:inline-block;">
+    <div style="position:relative;width:90px;min-height:95px;display:inline-flex;align-items:center;justify-content:flex-start;gap:3px;flex-direction:row-reverse;">
 
   <label for="invoiceLogoInput" style="
     display:block;
-    width:60px;
-    height:60px;
+    width:var(--invoice-logo-size,78px);
+    height:var(--invoice-logo-size,78px);
     border:none;
     background:transparent;
     border-radius:0;
@@ -1397,10 +1397,8 @@ openModal(`
   ">
     <img id="invoiceLogoPreview"
          src=""
-         style="width:100%;height:100%;object-fit:contain;border-radius:8px;display:none;">
-
-    <span id="invoiceLogoResizeHandle" class="noPrint" title="بکشید تا اندازه لوگو تغییر کند"
-      style="position:absolute;left:-3px;bottom:-3px;width:22px;height:22px;border-radius:6px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;cursor:nwse-resize;z-index:20;user-select:none;">↘</span>
+         style="width:var(--invoice-logo-size,78px);height:var(--invoice-logo-size,78px);object-fit:contain;border-radius:8px;display:none;">
+    <img id="invoiceLogoPrint" src="" alt="" class="noPrint" style="display:none;width:var(--invoice-logo-size,78px);height:var(--invoice-logo-size,78px);object-fit:contain;">
 
     <div id="invoiceLogoText" class="noPrint" style="
       color:#176b5b;
@@ -1411,6 +1409,11 @@ openModal(`
       🖼️<br>انتخاب لوگو
     </div>
   </label>
+
+  <div id="invoiceLogoSizeControls" class="noPrint" style="display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;flex:0 0 20px;">
+    <button type="button" class="secondary" onclick="window.changeInvoiceLogoSize(10)" style="width:20px;height:20px;padding:0;font-size:14px;line-height:18px;border-radius:6px">+</button>
+    <button type="button" class="secondary" onclick="window.changeInvoiceLogoSize(-10)" style="width:20px;height:20px;padding:0;font-size:14px;line-height:18px;border-radius:6px">−</button>
+  </div>
 
   <button id="removeInvoiceLogoBtn" class="noPrint"
           type="button"
@@ -1426,8 +1429,8 @@ openModal(`
           style="
             display:none;
             position:absolute;
-            left:-7px;
-            top:3px;
+            right:2px;
+            top:0;
             width:18px;
             height:18px;
             padding:0;
@@ -1454,6 +1457,7 @@ openModal(`
                reader.onload=function(e){
                  document.getElementById('invoiceLogoPreview').src=e.target.result;
                  document.getElementById('invoiceLogoPreview').style.display='block';
+                 const lp=document.getElementById('invoiceLogoPrint'); if(lp){lp.src=e.target.result;}
                  document.getElementById('invoiceLogoText').style.display='none';
                  document.getElementById('removeInvoiceLogoBtn').style.display='block';
                  document.getElementById('invoiceLogoWrap').classList.remove('noLogo');
@@ -1471,8 +1475,8 @@ openModal(`
   </div>
 
   <!-- سربرگ یکپارچه -->
-  <div style="border:1px solid #cfdad7;border-radius:10px;padding:8px 10px;background:#fff;direction:rtl;margin-bottom:10px;">
-    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:2px;align-items:stretch;">
+  <div style="border:1px solid #cfdad7;border-radius:10px;padding:6px 8px 6px 8px;background:#fff;direction:rtl;margin-bottom:3px;">
+    <div style="display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:1px;align-items:stretch;">
       <div style="text-align:right;min-width:0;">
         <div style="font-size:12px;color:#777;margin-bottom:3px;">👤 نام ${partyLabel}</div>
         <div style="font-size:15px;font-weight:bold;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6;">${esc(i.customer)}</div>
@@ -1482,14 +1486,14 @@ openModal(`
         ${optionalAddress?`<div style="font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.8;">آدرس: <span style="color:#111;">${esc(addressText)}</span></div>`:""}
         ${optionalOrderCode?`<div style="font-size:12px;color:#555;margin-top:3px;white-space:nowrap;line-height:1.8;">کد سفارش: <span style="color:#111;font-weight:bold;">${esc(faNum(orderCodeText))}</span></div>`:""}
       </div>
-      <div style="text-align:right;min-width:0;line-height:1.9;font-size:12px;color:#333;">
+      <div style="text-align:left;min-width:0;line-height:1.9;font-size:12px;color:#333;">
         <div><b>شماره فاکتور:</b> ${faNum(i.no)}</div>
         <div><b>تاریخ:</b> ${i.date}</div>
       </div>
     </div>
   </div>
 
-  <table style="width:100%;border-collapse:collapse;margin-bottom:15px;font-size:12px;">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:4px;font-size:13px;">
     <thead>
       <tr style="background:#d9ecf7 !important;background-color:#d9ecf7 !important;border-bottom:1px solid #c7dce8;font-size:14px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
         <th style="padding:8px;border:1px solid #d7e2e8;text-align:center;font-size:14px;font-weight:700;background:#d9ecf7;background-color:#d9ecf7;-webkit-print-color-adjust:exact;print-color-adjust:exact">ردیف</th>
@@ -1505,7 +1509,7 @@ openModal(`
     </tbody>
   </table>
 
-  <div style="border:1px solid #ccc;padding:10px;border-radius:8px;background:#f9f9f9;font-size:13px;margin-bottom:10px;">
+  <div style="border:1px solid #ccc;padding:8px;border-radius:8px;background:#f9f9f9;font-size:13px;margin-bottom:4px;">
     <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
       <span>مبلغ قابل پرداخت:</span>
       <b>${money(fromToman(i.total,invoiceUnit),invoiceUnit)}</b>
@@ -1523,7 +1527,7 @@ openModal(`
     </div>
   </div>
 
-  <div id="invoiceSignatureBlock" style="border-top:0;padding-top:8px;margin-top:8px;display:flex;justify-content:flex-start;gap:18px;direction:ltr;align-items:flex-end;width:58%;margin-right:auto;margin-left:0;">
+  <div id="invoiceSignatureBlock" style="border-top:0;padding-top:4px;margin-top:4px;display:flex;justify-content:flex-start;gap:18px;direction:ltr;align-items:flex-end;width:58%;margin-right:auto;margin-left:0;">
     <div class="signatureCell" style="flex:1;text-align:center;min-width:0;">
       <div class="signatureLabel" style="font-size:13px;font-weight:bold;margin-bottom:4px;">امضای مشتری</div>
       <img id="invoiceCustomerSignatureImage" src="" alt="" style="display:none;width:320px;height:140px;max-width:100%;object-fit:contain;margin:0 auto 2px;">
@@ -1553,45 +1557,30 @@ if(sellerSignature&&sellerImg){sellerImg.src=sellerSignature;sellerImg.style.dis
 
 const savedLogo=localStorage.getItem("barfInvoiceLogo");
 const logoImg=document.getElementById("invoiceLogoPreview");
+const logoPrint=document.getElementById("invoiceLogoPrint");
 const logoText=document.getElementById("invoiceLogoText");
 const logoRemove=document.getElementById("removeInvoiceLogoBtn");
 const logoWrap=document.getElementById("invoiceLogoWrap");
-const logoStage=document.getElementById("invoiceLogoStage");
-const logoResize=document.getElementById("invoiceLogoResizeHandle");
-let logoSize=parseInt(localStorage.getItem("barfInvoiceLogoSize")||"90",10);
-if(!Number.isFinite(logoSize)) logoSize=90;
-logoSize=Math.max(55,Math.min(180,logoSize));
-const applyLogoSize=()=>{
-  if(logoWrap){logoWrap.style.width=logoSize+"px";logoWrap.style.height=logoSize+"px";}
-  if(logoStage){logoStage.style.width=logoSize+"px";logoStage.style.height=logoSize+"px";}
+let savedLogoSize=Number(localStorage.getItem("barfInvoiceLogoSize")||78);
+if(!Number.isFinite(savedLogoSize))savedLogoSize=78;
+savedLogoSize=Math.max(48,Math.min(120,savedLogoSize));
+const applyInvoiceLogoSize=(size)=>{
+  size=Math.max(48,Math.min(120,Number(size)||78));
+  if(logoWrap) logoWrap.style.setProperty("--invoice-logo-size",size+"px");
+  if(logoImg){logoImg.style.width=size+"px";logoImg.style.height=size+"px";}
+  if(logoPrint){logoPrint.style.width=size+"px";logoPrint.style.height=size+"px";}
+  localStorage.setItem("barfInvoiceLogoSize",String(size));
 };
-applyLogoSize();
+window.changeInvoiceLogoSize=(delta)=>applyInvoiceLogoSize(savedLogoSize+Number(delta||0));
+applyInvoiceLogoSize(savedLogoSize);
 if(savedLogo && logoImg){
   logoImg.src=savedLogo;
   logoImg.style.display="block";
+  if(logoPrint) logoPrint.src=savedLogo;
   if(logoText) logoText.style.display="none";
   if(logoRemove) logoRemove.style.display="block";
   if(logoWrap) logoWrap.classList.remove("noLogo");
 }
-if(logoResize){
-  let resizing=false,startX=0,startY=0,startSize=logoSize;
-  const move=e=>{
-    if(!resizing)return;
-    const pt=e.touches?e.touches[0]:e;
-    const delta=Math.max(startX-pt.clientX,startY-pt.clientY);
-    logoSize=Math.max(55,Math.min(180,startSize+delta));
-    applyLogoSize();
-    e.preventDefault();
-  };
-  const stop=()=>{if(resizing){resizing=false;localStorage.setItem("barfInvoiceLogoSize",String(Math.round(logoSize)));}};
-  logoResize.addEventListener("mousedown",e=>{resizing=true;startX=e.clientX;startY=e.clientY;startSize=logoSize;e.preventDefault();});
-  logoResize.addEventListener("touchstart",e=>{const pt=e.touches[0];resizing=true;startX=pt.clientX;startY=pt.clientY;startSize=logoSize;e.preventDefault();},{passive:false});
-  document.addEventListener("mousemove",move);
-  document.addEventListener("touchmove",move,{passive:false});
-  document.addEventListener("mouseup",stop);
-  document.addEventListener("touchend",stop);
-}
-
 };
 
 window.deleteInvoice=async id=>{
