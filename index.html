@@ -982,12 +982,6 @@ const nextInvoiceNumber=(invoiceType)=>{
   return (nums.length?Math.max(...nums):0)+1;
 };
 
-window.hasAnnualSubscription=()=>{
-  const until=Number(currentUser?.user_metadata?.barf_subscription_until||0);
-  return until>Date.now();
-};
-window.invoiceFreeLimit=10;
-window.invoiceCount=()=>Array.isArray(data.invoices)?data.invoices.length:0;
 window.openSubscriptionInfo=function(){
   openModal(`<div class="modalHead"><div><h2>اشتراک برف</h2></div><button class="close" type="button" onclick="closeModal()">×</button></div><div class="card" style="padding:24px;text-align:center;line-height:2.1"><div style="font-size:14px;font-weight:700;color:#26322f;margin-bottom:20px">کاربر گرامی در نسخه آزمایشی محدودیت ثبت تعداد ۱۰ فاکتور می‌باشید، براى رفع اين محدوديت نياز به پرداخت وجه اشتراك سالانه مى باشد و با فعال شدن برنامه تمامى امكانات دراختيار شماست</div><div style="display:flex;gap:10px"><button class="secondary" style="flex:1" type="button" onclick="closeModal()">بستن</button><button class="primary" style="flex:1" type="button" onclick="startAnnualSubscriptionPurchase()">پرداخت</button></div></div>`);
 };
@@ -998,7 +992,6 @@ window.startAnnualSubscriptionPurchase=function(){
 };
 
 window.newInvoice=(invoiceType="sale")=>{
-if(!window._editingInvoiceId && !window.hasAnnualSubscription() && window.invoiceCount()>=window.invoiceFreeLimit){showSubscriptionPage();return;}
 invoiceFormViewing=true;
 try{ history.pushState({barfInvoiceForm:true,page:currentPage,invoiceType},"",homeUrl()+"#invoice-form"); }catch(e){}
 currentInvoiceItems=[];
