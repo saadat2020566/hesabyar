@@ -369,7 +369,7 @@ if ("serviceWorker" in navigator) {
 </header>
 <div class="wrap">
 <aside class="side">
-<button data-page="home" class="active" onclick="openSubscriptionInfo();return false;">🔒</button>
+<button data-page="home" class="active" type="button" onclick="openSubscriptionInfo();return false;">🔒</button>
 <button data-page="sales">🧾 فاکتورها</button>
 <button data-page="customers">👥 مشتریان</button>
 <button data-page="products">📦 محصولات</button>
@@ -438,7 +438,6 @@ const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
 let invoiceViewing=false;
-let invoiceFormViewing=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
 
 const nav=p=>{
@@ -459,11 +458,6 @@ window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
   if(invoiceViewing){
     invoiceViewing=false;
-    closeModal();
-    return;
-  }
-  if(invoiceFormViewing){
-    invoiceFormViewing=false;
     closeModal();
     return;
   }
@@ -790,6 +784,14 @@ window.deleteExpense=async id=>{
 };
 window.finance=()=>render("finance"); function reports(){let s=data.invoices.reduce((a,i)=>a+i.total,0);main.innerHTML=`<div class="head"><h1>گزارش‌ها</h1></div><div class="cards">${metric("فروش کل",dbMoney(s),"فاکتورها")}${metric("فاکتور",data.invoices.length,"تعداد")}${metric("مشتری",data.customers.length,"تعداد")}${metric("محصول",data.products.length,"تعداد")}</div>`}
 
+window.openSubscriptionInfo=function(){
+  openModal(`<div class="modalHead"><div><h2>🔒 اشتراک برف</h2><div style="font-size:12px;color:#71807b;margin-top:4px">نسخه آزمایشی</div></div><button class="close" type="button" onclick="closeModal()">×</button></div><div class="card" style="padding:24px;text-align:center;line-height:2.1"><div style="font-size:14px;font-weight:700;color:#26322f;margin-bottom:20px">کاربر گرامی در نسخه آزمایشی محدودیت ثبت تعداد ۱۰ فاکتور می‌باشید، براى رفع اين محدوديت نياز به پرداخت وجه اشتراك سالانه مى باشد و با فعال شدن برنامه تمامى امكانات دراختيار شماست</div><div style="display:flex;gap:10px"><button class="secondary" style="flex:1" type="button" onclick="closeModal()">بستن</button><button class="primary" style="flex:1" type="button" onclick="startAnnualSubscriptionPurchase()">پرداخت</button></div></div>`);
+};
+window.startAnnualSubscriptionPurchase=function(){
+  closeModal();
+  alert("پرداخت اشتراک سالانه از طریق بازار پس از اتصال نسخه اندروید به درگاه پرداخت انجام می‌شود.");
+};
+
 function openModal(h){const box=document.getElementById("box");box.innerHTML=h;box.classList.toggle("checkBox",String(h).includes("ثبت چک")||String(h).includes("چک های دریافتی")||String(h).includes("جزئیات چک")||String(h).includes("دریافت چک")||String(h).includes("چک خودم"));document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
 window.closeModal = closeModal;
@@ -982,41 +984,7 @@ const nextInvoiceNumber=(invoiceType)=>{
   return (nums.length?Math.max(...nums):0)+1;
 };
 
-window.hasAnnualSubscription=()=>{
-  const until=Number(currentUser?.user_metadata?.barf_subscription_until||0);
-  return until>Date.now();
-};
-window.invoiceFreeLimit=10;
-window.invoiceCount=()=>Array.isArray(data.invoices)?data.invoices.length:0;
-window.openSubscriptionInfo=()=>{
-  openModal(`<div class="modalHead"><div><h2>🔒 اشتراک برف</h2><div style="font-size:12px;color:#71807b;margin-top:4px">اطلاعات نسخه آزمایشی</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
-  <div class="card" style="text-align:center;padding:24px;line-height:2.1">
-    <div style="font-size:42px;margin-bottom:10px">🔒</div>
-    <div style="font-size:14px;font-weight:700;color:#26322f">کاربر گرامی، در نسخه آزمایشی محدودیت ثبت تعداد ۱۰ فاکتور می‌باشید، برای رفع این محدودیت نیاز به پرداخت وجه اشتراک سالانه می‌باشد و با فعال شدن برنامه تمامی امکانات در اختیار شماست.</div>
-    
-    <div style="display:flex;gap:10px">
-      <button class="secondary" style="flex:1" type="button" onclick="closeModal()">بستن</button>
-      <button class="primary" style="flex:1" type="button" onclick="startAnnualSubscriptionPurchase()">پرداخت</button>
-    </div>
-  </div>`);
-};
-window.showSubscriptionPage=()=>{
-  openModal(`<div class="modalHead"><div><h2>اشتراک برف</h2><div style="font-size:12px;color:#71807b;margin-top:4px">استفاده رایگان شما به پایان رسیده است</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
-  <div class="card" style="text-align:center;padding:24px">
-    <div style="font-size:42px;margin-bottom:10px">⭐</div>
-    <h3>۱۰ فاکتور رایگان شما استفاده شده است.</h3>
-    <p class="muted" style="margin:10px 0 18px">برای ادامه ثبت فاکتور، اشتراک سالانه برف را تهیه کنید.</p>
-    <button class="primary fullBtn" type="button" onclick="startAnnualSubscriptionPurchase()">خرید اشتراک سالانه</button>
-  </div>`);
-};
-window.startAnnualSubscriptionPurchase=()=>{
-  alert("خرید اشتراک سالانه در نسخه اندروید باید به پرداخت درون‌برنامه‌ای کافه‌بازار متصل شود.");
-};
-
 window.newInvoice=(invoiceType="sale")=>{
-if(!window._editingInvoiceId && !window.hasAnnualSubscription() && window.invoiceCount()>=window.invoiceFreeLimit){showSubscriptionPage();return;}
-invoiceFormViewing=true;
-try{ history.pushState({barfInvoiceForm:true,page:currentPage,invoiceType},"",homeUrl()+"#invoice-form"); }catch(e){}
 currentInvoiceItems=[];
 window._editingInvoiceId=null;
 window._invoiceType=invoiceType;
@@ -1025,7 +993,7 @@ const invoiceTitle=isPurchase?"فاکتور خرید":"فاکتور فروش";
 const partyLabel=isPurchase?"فروشنده":"مشتری";
 let opts=data.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
 let defaultNo=nextInvoiceNumber(invoiceType);
-let defaultDate=jalaliToday();
+let defaultDate=new Intl.DateTimeFormat("fa-IR").format(new Date());
 window._invoiceCurrency=appCurrency();
 
 openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" type="button" onclick="newInvoiceChooser()">×</button></div>
@@ -1055,7 +1023,7 @@ openModal(`<div class="modalHead"><h2>${invoiceTitle}</h2><button class="close" 
     "
   >
 </div>
-  <div class="field"><label>تاریخ</label><input id="invDate" class="input" type="text" readonly value="${defaultDate}" onclick="openJalaliPicker('invDate')" placeholder="انتخاب تاریخ"></div>
+  <div class="field"><label>تاریخ</label><input id="invDate" class="input" value="${defaultDate}"></div>
   <div class="field full"><label>${partyLabel}</label><select id="ic" class="input"><option value="">${isPurchase?"فروشنده متفرقه":"مشتری متفرقه"}</option>${opts}</select></div>
 </div>
 <div class="sectionTitle" style="margin-top:12px"><h3>اقلام فاکتور</h3><button type="button" class="secondary" onclick="openAddItemModal()">+ افزودن محصول</button></div>
@@ -1416,7 +1384,7 @@ openModal(`
   <div id="invoiceLogoWrap" class="noLogo" style="
     position:absolute;
     right:0;
-    top:-20px;
+    top:42px;
     width:110px;
     height:90px;
     text-align:center;
