@@ -982,7 +982,27 @@ const nextInvoiceNumber=(invoiceType)=>{
   return (nums.length?Math.max(...nums):0)+1;
 };
 
+window.hasAnnualSubscription=()=>{
+  const until=Number(currentUser?.user_metadata?.barf_subscription_until||0);
+  return until>Date.now();
+};
+window.invoiceFreeLimit=10;
+window.invoiceCount=()=>Array.isArray(data.invoices)?data.invoices.length:0;
+window.showSubscriptionPage=()=>{
+  openModal(`<div class="modalHead"><div><h2>اشتراک برف</h2><div style="font-size:12px;color:#71807b;margin-top:4px">استفاده رایگان شما به پایان رسیده است</div></div><button class="close" type="button" onclick="closeModal()">×</button></div>
+  <div class="card" style="text-align:center;padding:24px">
+    <div style="font-size:42px;margin-bottom:10px">⭐</div>
+    <h3>۱۰ فاکتور رایگان شما استفاده شده است.</h3>
+    <p class="muted" style="margin:10px 0 18px">برای ادامه ثبت فاکتور، اشتراک سالانه برف را تهیه کنید.</p>
+    <button class="primary fullBtn" type="button" onclick="startAnnualSubscriptionPurchase()">خرید اشتراک سالانه</button>
+  </div>`);
+};
+window.startAnnualSubscriptionPurchase=()=>{
+  alert("خرید اشتراک سالانه در نسخه اندروید باید به پرداخت درون‌برنامه‌ای کافه‌بازار متصل شود.");
+};
+
 window.newInvoice=(invoiceType="sale")=>{
+if(!window._editingInvoiceId && !window.hasAnnualSubscription() && window.invoiceCount()>=window.invoiceFreeLimit){showSubscriptionPage();return;}
 invoiceFormViewing=true;
 try{ history.pushState({barfInvoiceForm:true,page:currentPage,invoiceType},"",homeUrl()+"#invoice-form"); }catch(e){}
 currentInvoiceItems=[];
