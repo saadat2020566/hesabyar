@@ -973,12 +973,14 @@ window.saveExpense=async()=>{let title=en.value.trim(),inputAmount=+ea.value||0,
 
 async function normalizePurchaseInvoiceNumbers(){
   const purchaseIds=data.invoices.filter(i=>getInvoiceType(i.id)==="purchase" && Number(i.no)>0).map(i=>i.id);
-  for(const id of purchaseIds){
+  if(!purchaseIds.length)return;
+  const results=await Promise.all(purchaseIds.map(id=>{
     const inv=data.invoices.find(x=>String(x.id)===String(id));
-    if(!inv) continue;
-    const r=await sb.from("invoices").update({invoice_no:-Math.abs(Number(inv.no)||0)}).eq("id",id).eq("user_id",currentUser.id);
-    if(r.error) throw r.error;
-  }
+    if(!inv)return null;
+    return sb.from("invoices").update({invoice_no:-Math.abs(Number(inv.no)||0)}).eq("id",id).eq("user_id",currentUser.id);
+  }));
+  const bad=results.find(r=>r&&r.error);
+  if(bad)throw bad.error;
 }
 
 const nextInvoiceNumber=(invoiceType)=>{
@@ -1229,25 +1231,41 @@ if(window._editingInvoiceId){
   if(!oldInv)return alert("فاکتور برای ویرایش پیدا نشد.");
   const oldItemsR=await sb.from("invoice_items").select("*").eq("invoice_id",editId).eq("user_id",currentUser.id);
   if(oldItemsR.error)return alert(oldItemsR.error.message);
-  for(const x of (oldItemsR.data||[])){
-    if(x.product_id){
-      const p=data.products.find(pp=>String(pp.id)===String(x.product_id));
-      if(p){
-        const restored=invoiceType==="purchase" ? p.stock-Number(x.quantity||0) : p.stock+Number(x.quantity||0);
-        await sb.from("products").update({stock:restored}).eq("id",p.id).eq("user_id",currentUser.id);
-      }
-    }
-  }
+  const oldStockUpdates=(oldItemsR.data||[]).map(x=>{
+    if(!x.product_id)return null;
+    const p=data.products.find(pp=>String(pp.id)===String(x.product_id));
+    if(!p)return null;
+    const restored=invoiceType==="purchase" ? p.stock-Number(x.quantity||0) : p.stock+Number(x.quantity||0);
+    return sb.from("products").update({stock:restored}).eq("id",p.id).eq("user_id",currentUser.id);
+  }).filter(Boolean);
+  const oldStockResults=await Promise.all(oldStockUpdates);
+  const oldStockError=oldStockResults.find(r=>r.error);
+  if(oldStockError)return alert(oldStockError.error.message);
   let ur=await sb.from("invoices").update({invoice_no:storedInvoiceNo,invoice_date:invoiceDate,customer_id:cid?+cid:null,customer_name:c?.name||"مشتری متفرقه",subtotal:dbSub,discount:dbDiscount,total:dbTotal,paid:dbPay,remaining:dbRemaining}).eq("id",editId).eq("user_id",currentUser.id);
   if(ur.error)return alert("خطا در ویرایش فاکتور:\n"+ur.error.message);
   let dr=await sb.from("invoice_items").delete().eq("invoice_id",editId).eq("user_id",currentUser.id);
   if(dr.error)return alert("خطا در به‌روزرسانی اقلام فاکتور:\n"+dr.error.message);
   let ir2=await sb.from("invoice_items").insert(currentInvoiceItems.map(x=>({user_id:currentUser.id,invoice_id:editId,product_id:x.p.id,product_name:x.p.name+" | مدل: "+(x.model||'-'),quantity:x.q,unit_price:toToman(x.unit,invoiceUnit),line_total:toToman(x.total,invoiceUnit)})));
   if(ir2.error)return alert("خطا در ثبت اقلام جدید:\n"+ir2.error.message);
-  for(const x of currentInvoiceItems){if(x.p.id){const p=data.products.find(pp=>String(pp.id)===String(x.p.id));const base=p?p.stock:0;const newStock=invoiceType==="purchase"?base+x.q:base-x.q;await sb.from("products").update({stock:newStock}).eq("id",x.p.id).eq("user_id",currentUser.id);}}
+  const newStockUpdates=currentInvoiceItems.filter(x=>x.p.id).map(x=>{
+    const p=data.products.find(pp=>String(pp.id)===String(x.p.id));
+    const base=p?p.stock:0;
+    const newStock=invoiceType==="purchase"?base+x.q:base-x.q;
+    return sb.from("products").update({stock:newStock}).eq("id",x.p.id).eq("user_id",currentUser.id);
+  });
+  const newStockResults=await Promise.all(newStockUpdates);
+  const newStockError=newStockResults.find(r=>r.error);
+  if(newStockError)return alert("خطا در به‌روزرسانی موجودی:\n"+newStockError.error.message);
   setInvoiceCurrency(editId,invoiceUnit);setInvoiceType(editId,invoiceType);
   setInvoiceDisplayOptions(editId,{storeTitle:!!document.getElementById("optStoreTitle")?.checked,customerPhone:!!document.getElementById("optCustomerPhone")?.checked,address:!!document.getElementById("optAddress")?.checked,orderCode:!!document.getElementById("optOrderCode")?.checked,storeTitleText:(document.getElementById("invoiceStoreTitle")?.value||"برف").trim(),customerPhoneText:(document.getElementById("invoiceCustomerPhone")?.value||"").trim(),addressText:(document.getElementById("invoiceAddress")?.value||"").trim(),orderCodeText:(document.getElementById("invoiceOrderCode")?.value||"").trim()});
-  window._editingInvoiceId=null; await loadData(); closeModal(); showInvoice(editId); return;
+  const localInv=data.invoices.find(x=>String(x.id)===String(editId));
+  if(localInv){Object.assign(localInv,{no:Math.abs(storedInvoiceNo),customerId:cid,total:dbTotal,paid:dbPay,remaining:dbRemaining,date:invoiceDate});}
+  for(const x of currentInvoiceItems){
+    if(!x.p.id)continue;
+    const p=data.products.find(pp=>String(pp.id)===String(x.p.id));
+    if(p)p.stock=invoiceType==="purchase"?p.stock+x.q:p.stock-x.q;
+  }
+  window._editingInvoiceId=null; closeModal(); showInvoice(editId); return;
 }
 let inv=await sb.from("invoices").insert({
   user_id:currentUser.id,
