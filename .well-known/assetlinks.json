@@ -1,8 +1,14 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.hesabyar.app",
-        "sha256_cert_fingerprints": ["54:40:14:A5:D3:EC:C1:75:70:6B:E6:B8:A0:90:E5:C6:25:4A:47:DD:19:1A:05:A5:87:DD:97:52:D0:9A:5A:59"]
-      }
-    }]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.barf.app",
+      "sha256_cert_fingerprints": [
+        "DB:3F:EF:29:3A:A4:E5:E3:94:67:F7:8E:CE:98:A4:85:9F:93:2B:AB:01:E9:F8:54:56:1B:D9:5D:C6:5B:27:1B"
+      ]
+    }
+  }
+]
