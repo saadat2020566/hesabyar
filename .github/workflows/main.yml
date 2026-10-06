@@ -27,18 +27,20 @@ jobs:
         with:
           packages: ""
 
-      - name: Install Android SDK 35
+      - name: Install Android SDK 36
         shell: bash
         run: |
+          set -e
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager --install \
             "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+            "platforms;android-36" \
+            "build-tools;36.0.0"
 
       - name: Install Cordova
         shell: bash
         run: |
+          set -e
           npm install -g cordova@13.0.0
 
       - name: Prepare Cordova project
@@ -87,6 +89,7 @@ jobs:
         shell: bash
         working-directory: build-app
         run: |
+          set -e
           cordova build android --release
 
       - name: Sign APK
