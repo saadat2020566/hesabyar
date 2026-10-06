@@ -31,7 +31,9 @@ jobs:
         shell: bash
         run: |
           set -e
+
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-36" \
@@ -92,7 +94,7 @@ jobs:
           set -e
           cordova build android --release
 
-      - name: Sign APK
+      - name: Sign Release APK
         shell: bash
         env:
           KS_B64: ${{ secrets.BARF_KEYSTORE_BASE64 }}
@@ -122,13 +124,34 @@ jobs:
             exit 1
           fi
 
+          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+
+          BUILD_TOOLS="$SDK_ROOT/build-tools/36.0.0"
+
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+
+          if [ ! -f "$ZIPALIGN" ]; then
+            echo "zipalign not found at:"
+            echo "$ZIPALIGN"
+            ls -la "$SDK_ROOT/build-tools/"
+            exit 1
+          fi
+
+          if [ ! -f "$APKSIGNER" ]; then
+            echo "apksigner not found at:"
+            echo "$APKSIGNER"
+            ls -la "$SDK_ROOT/build-tools/36.0.0/"
+            exit 1
+          fi
+
           echo "$KS_B64" | base64 --decode > barf-release.jks
 
-          zipalign -p -f 4 \
+          "$ZIPALIGN" -p -f 4 \
             build-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk \
             aligned.apk
 
-          apksigner sign \
+          "$APKSIGNER" sign \
             --ks barf-release.jks \
             --ks-key-alias "$ALIAS" \
             --ks-pass pass:"$KS_PASS" \
@@ -136,7 +159,7 @@ jobs:
             --out barf-cafebazaar-release.apk \
             aligned.apk
 
-          apksigner verify --verbose barf-cafebazaar-release.apk
+          "$APKSIGNER" verify --verbose barf-cafebazaar-release.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
