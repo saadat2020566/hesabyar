@@ -31,7 +31,10 @@ jobs:
         shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Install Cordova
         shell: bash
@@ -41,6 +44,8 @@ jobs:
       - name: Prepare Cordova project
         shell: bash
         run: |
+          set -e
+
           rm -rf build-app
 
           cordova create build-app com.barf.app "برف"
@@ -65,14 +70,17 @@ jobs:
           fi
 
           if [ -f icon-192.png ]; then
+            cp icon-192.png build-app/icon-192.png
             cp icon-192.png build-app/www/icon-192.png
           fi
 
           if [ -f icon-512.png ]; then
+            cp icon-512.png build-app/icon-512.png
             cp icon-512.png build-app/www/icon-512.png
           fi
 
           cd build-app
+
           cordova platform add android@15.0.0
 
       - name: Build Release APK
