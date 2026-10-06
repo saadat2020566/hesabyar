@@ -25,10 +25,10 @@ jobs:
       - name: Android SDK
         uses: android-actions/setup-android@v3
 
-    - name: Install Android SDK 35
-  run: |
-    yes | sdkmanager --licenses >/dev/null 2>&1 || true
-    sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Android SDK 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Cordova
         run: npm install -g cordova@13.0.0
