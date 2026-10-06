@@ -23,7 +23,9 @@ jobs:
           node-version: "20"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
 
       - name: Install Android SDK 35
         shell: bash
@@ -40,6 +42,7 @@ jobs:
         shell: bash
         run: |
           rm -rf build-app
+
           cordova create build-app com.barf.app "برف"
 
           cp index.html build-app/www/index.html
