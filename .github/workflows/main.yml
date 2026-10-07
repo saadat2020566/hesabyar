@@ -31,9 +31,7 @@ jobs:
         shell: bash
         run: |
           set -e
-
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-36" \
@@ -92,7 +90,25 @@ jobs:
         working-directory: build-app
         run: |
           set -e
-          cordova build android --release
+
+          cordova build android --release -- --packageType=apk
+
+      - name: Check APK
+        shell: bash
+        run: |
+          set -e
+
+          APK="build-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          if [ ! -f "$APK" ]; then
+            echo "Release APK was not created."
+            echo "Searching for generated APK/AAB files:"
+            find build-app/platforms/android/app/build/outputs -type f \( -name "*.apk" -o -name "*.aab" \) -print || true
+            exit 1
+          fi
+
+          echo "APK found:"
+          ls -lh "$APK"
 
       - name: Sign Release APK
         shell: bash
@@ -125,23 +141,20 @@ jobs:
           fi
 
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-
           BUILD_TOOLS="$SDK_ROOT/build-tools/36.0.0"
 
           ZIPALIGN="$BUILD_TOOLS/zipalign"
           APKSIGNER="$BUILD_TOOLS/apksigner"
 
           if [ ! -f "$ZIPALIGN" ]; then
-            echo "zipalign not found at:"
+            echo "zipalign not found:"
             echo "$ZIPALIGN"
-            ls -la "$SDK_ROOT/build-tools/"
             exit 1
           fi
 
           if [ ! -f "$APKSIGNER" ]; then
-            echo "apksigner not found at:"
+            echo "apksigner not found:"
             echo "$APKSIGNER"
-            ls -la "$SDK_ROOT/build-tools/36.0.0/"
             exit 1
           fi
 
