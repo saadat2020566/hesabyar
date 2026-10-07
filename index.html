@@ -399,7 +399,7 @@ if ("serviceWorker" in navigator) {
 "use strict";
 const SUPABASE_URL="https://fxlscrfnfqepchonanra.supabase.co";
 const SUPABASE_KEY="sb_publishable_m4oeS3DxKFwW3MD7jEfN8w_daMzX00F";
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
 
@@ -481,44 +481,63 @@ window.addEventListener("popstate",()=>{
 });
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
+function normalizePhone(v){
+ v=String(v||"").trim().replace(/[\s\-()]/g,"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+ if(/^09\d{9}$/.test(v)) return "+98"+v.slice(1);
+ if(/^0098\d{10}$/.test(v)) return "+"+v.slice(2);
+ if(/^98\d{10}$/.test(v)) return "+"+v;
+ if(/^\+98\d{10}$/.test(v)) return v;
+ return "";
+}
+let pendingPhone="";
 function authScreen(msg=""){
  document.body.classList.add("authMode");
  main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>برف</h1>
- <p class="muted">بساز راحت فاکتور</p>
+ <p class="muted">ورود با شماره موبایل</p>
  ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
- <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
- <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
- <button class="primary fullBtn" onclick="doLogin()">ورود</button>
- <button class="primary recoveryBtn" type="button" onclick="forgotPassword()">🔑 بازیابی رمز عبور</button>
+ <div class="field"><label>شماره موبایل</label><input id="authPhone" class="input" type="tel" inputmode="tel" autocomplete="tel" placeholder="مثلاً 09121234567"></div>
+ <button class="primary fullBtn" onclick="sendSmsCode()">📱 ارسال کد پیامک</button>
+ <div style="margin-top:12px;font-size:12px;color:#71807b;line-height:1.9">حساب کاربری با شماره موبایل ساخته می‌شود و نیازی به ایمیل یا رمز عبور ندارید.</div>
  </div>`;
 }
-
-window.forgotPassword=async function(){
- const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
- if(!email)return authScreen("ابتدا ایمیل خود را وارد کنید، سپس روی بازیابی رمز بزنید.");
- try{
-   const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-   if(r.error)return authScreen("ارسال لینک بازیابی ناموفق بود: "+r.error.message);
-   authScreen("لینک بازیابی رمز به ایمیل شما ارسال شد. ایمیل را باز کنید و رمز جدید را تعیین کنید.");
- }catch(e){
-   authScreen("ارسال لینک بازیابی انجام نشد. اینترنت را بررسی کنید.");
- }
+function otpScreen(msg=""){
+ document.body.classList.add("authMode");
+ main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>تأیید شماره</h1>
+ <p class="muted">کد ارسال‌شده به <b dir="ltr">${esc(pendingPhone)}</b> را وارد کنید</p>
+ ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
+ <div class="field"><label>کد پیامک</label><input id="authOtp" class="input" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="کد ۶ رقمی"></div>
+ <button class="primary fullBtn" onclick="verifySmsCode()">ورود به برنامه</button>
+ <button class="recoveryBtn" type="button" onclick="sendSmsCode()">🔄 ارسال دوباره کد</button>
+ <button class="recoveryBtn" type="button" onclick="authScreen()">تغییر شماره</button>
+ </div>`;
 }
 window.authScreen=authScreen;
-
-window.doLogin=async function(){
- const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
- const password=document.getElementById("authPass")?.value||"";
- if(!email||!password)return authScreen("ایمیل و رمز عبور را وارد کنید.");
+window.sendSmsCode=async function(){
+ const raw=document.getElementById("authPhone")?.value||pendingPhone||"";
+ const phone=normalizePhone(raw);
+ if(!phone)return authScreen("شماره موبایل را به شکل 09121234567 وارد کنید.");
+ pendingPhone=phone;
  try{
-   const r=await sb.auth.signInWithPassword({email,password});
-   if(r.error){ const msg=String(r.error.message||r.error||""); if(/fetch|failed to fetch|network|networkerror|failed to load|connection|offline/i.test(msg))return authScreen("اینترنت خود را بررسی کنید"); return authScreen("ورود ناموفق بود: "+msg); }
+   const r=await sb.auth.signInWithOtp({phone});
+   if(r.error)return otpScreen("ارسال کد ناموفق بود: "+(r.error.message||r.error));
+   otpScreen("کد پیامک ارسال شد.");
+   setTimeout(()=>document.getElementById("authOtp")?.focus(),50);
+ }catch(e){
+   otpScreen("ارسال کد انجام نشد. اتصال اینترنت و فعال بودن سرویس پیامک را بررسی کنید.");
+ }
+};
+window.verifySmsCode=async function(){
+ const token=(document.getElementById("authOtp")?.value||"").trim().replace(/[^0-9]/g,"");
+ if(token.length<4)return otpScreen("کد پیامک را کامل وارد کنید.");
+ try{
+   const r=await sb.auth.verifyOtp({phone:pendingPhone,token,type:"sms"});
+   if(r.error)return otpScreen("کد واردشده صحیح نیست یا منقضی شده است.");
    currentUser=r.data.user;
    document.body.classList.remove("authMode");
    try{await loadData();render("home");}
-   catch(e){authScreen("بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
+   catch(e){authScreen("ورود انجام شد، اما بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
  }catch(e){
-   authScreen("ارتباط با سرور انجام نشد. اینترنت را بررسی کنید.");
+   otpScreen("تأیید کد انجام نشد. دوباره تلاش کنید.");
  }
 };
 window.changeAppCurrency=unit=>{if(unit!=="تومان"&&unit!=="ریال")return;localStorage.setItem("barfCurrency",unit);render(currentPage||"home",false);};
@@ -563,19 +582,11 @@ window.updatePassword=async function(){
 
 sb.auth.onAuthStateChange((event, session)=>{
  currentUser=session?.user||null;
- if(event==="PASSWORD_RECOVERY"){ document.body.classList.add("authMode"); resetPasswordScreen(); return; }
- if(event==="SIGNED_OUT" && !currentUser) authScreen();
+ if(event==="SIGNED_OUT" && !currentUser) authScreen("از حساب خارج شدید.");
 });
 
 async function start(){
  try{
-   const recoveryLink = /(^|[&#])type=recovery(&|#|$)/.test(window.location.hash) ||
-                        new URLSearchParams(window.location.search).get("type")==="recovery";
-   if(recoveryLink){
-     document.body.classList.add("authMode");
-     resetPasswordScreen();
-     return;
-   }
    const s=await sb.auth.getSession();
    currentUser=s.data.session?.user||null;
    if(!currentUser){authScreen();return;}
@@ -988,16 +999,34 @@ const nextInvoiceNumber=(invoiceType)=>{
   return (nums.length?Math.max(...nums):0)+1;
 };
 
+window.BARF_PAYMENT_START_URL="";
+window.invoiceFreeLimit=10;
+window.hasAnnualSubscription=function(){
+  const until=Number(currentUser?.user_metadata?.barf_subscription_until||0);
+  return until>Date.now();
+};
+window.invoiceCount=function(){
+  return Array.isArray(data?.invoices)?data.invoices.length:0;
+};
 window.openSubscriptionInfo=function(){
-  openModal(`<div class="modalHead"><div><h2>اشتراک برف</h2></div><button class="close" type="button" onclick="closeModal()">×</button></div><div class="card" style="padding:24px;text-align:center;line-height:2.1"><div style="font-size:14px;font-weight:700;color:#26322f;margin-bottom:20px">کاربر گرامی در نسخه آزمایشی محدودیت ثبت تعداد ۱۰ فاکتور می‌باشید، براى رفع اين محدوديت نياز به پرداخت وجه اشتراك سالانه مى باشد و با فعال شدن برنامه تمامى امكانات دراختيار شماست</div><div style="display:flex;gap:10px"><button class="secondary" style="flex:1" type="button" onclick="closeModal()">بستن</button><button class="primary" style="flex:1" type="button" onclick="startAnnualSubscriptionPurchase()">پرداخت</button></div></div>`);
+  const count=window.invoiceCount();
+  openModal(`<div class="modalHead"><div><h2>اشتراک برف</h2></div><button class="close" type="button" onclick="closeModal()">×</button></div><div class="card" style="padding:24px;text-align:center;line-height:2.1"><div style="font-size:14px;font-weight:700;color:#26322f;margin-bottom:10px">تعداد فاکتورهای ثبت‌شده: ${count}</div><div style="font-size:14px;font-weight:700;color:#26322f;margin-bottom:20px">برای ثبت بیش از ۱۰ فاکتور، اشتراک سالانه برف را فعال کنید. پس از فعال شدن اشتراک، ثبت فاکتور نامحدود خواهد بود.</div><div style="display:flex;gap:10px"><button class="secondary" style="flex:1" type="button" onclick="closeModal()">بستن</button><button class="primary" style="flex:1" type="button" onclick="startAnnualSubscriptionPurchase()">پرداخت اشتراک سالانه</button></div></div>`);
 };
 window.showSubscriptionPage=window.openSubscriptionInfo;
 window.startAnnualSubscriptionPurchase=function(){
   closeModal();
-  alert("پرداخت اشتراک سالانه از طریق بازار پس از اتصال نسخه اندروید به درگاه پرداخت انجام می‌شود.");
+  if(window.BARF_PAYMENT_START_URL){
+    window.location.href=window.BARF_PAYMENT_START_URL;
+    return;
+  }
+  alert("درگاه پرداخت هنوز به سرور پرداخت متصل نشده است. پس از قرار دادن آدرس شروع پرداخت در BARF_PAYMENT_START_URL، کاربر به درگاه بانکی هدایت می‌شود.");
 };
 
 window.newInvoice=(invoiceType="sale")=>{
+if(!window._editingInvoiceId && !window.hasAnnualSubscription() && window.invoiceCount()>=window.invoiceFreeLimit){
+  window.showSubscriptionPage();
+  return;
+}
 invoiceFormViewing=true;
 try{ history.pushState({barfInvoiceForm:true,page:currentPage,invoiceType},"",homeUrl()+"#invoice-form"); }catch(e){}
 currentInvoiceItems=[];
