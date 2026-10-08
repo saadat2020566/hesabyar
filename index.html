@@ -399,7 +399,7 @@ if ("serviceWorker" in navigator) {
 "use strict";
 const SUPABASE_URL="https://fxlscrfnfqepchonanra.supabase.co";
 const SUPABASE_KEY="sb_publishable_m4oeS3DxKFwW3MD7jEfN8w_daMzX00F";
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
 
@@ -481,63 +481,44 @@ window.addEventListener("popstate",()=>{
 });
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
-function normalizePhone(v){
- v=String(v||"").trim().replace(/[\s\-()]/g,"").replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d));
- if(/^09\d{9}$/.test(v)) return "+98"+v.slice(1);
- if(/^0098\d{10}$/.test(v)) return "+"+v.slice(2);
- if(/^98\d{10}$/.test(v)) return "+"+v;
- if(/^\+98\d{10}$/.test(v)) return v;
- return "";
-}
-let pendingPhone="";
 function authScreen(msg=""){
  document.body.classList.add("authMode");
  main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>برف</h1>
- <p class="muted">ورود با شماره موبایل</p>
+ <p class="muted">بساز راحت فاکتور</p>
  ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
- <div class="field"><label>شماره موبایل</label><input id="authPhone" class="input" type="tel" inputmode="tel" autocomplete="tel" placeholder="مثلاً 09121234567"></div>
- <button class="primary fullBtn" onclick="sendSmsCode()">📱 ارسال کد پیامک</button>
- <div style="margin-top:12px;font-size:12px;color:#71807b;line-height:1.9">حساب کاربری با شماره موبایل ساخته می‌شود و نیازی به ایمیل یا رمز عبور ندارید.</div>
+ <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
+ <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
+ <button class="primary fullBtn" onclick="doLogin()">ورود</button>
+ <button class="primary recoveryBtn" type="button" onclick="forgotPassword()">🔑 بازیابی رمز عبور</button>
  </div>`;
 }
-function otpScreen(msg=""){
- document.body.classList.add("authMode");
- main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>تأیید شماره</h1>
- <p class="muted">کد ارسال‌شده به <b dir="ltr">${esc(pendingPhone)}</b> را وارد کنید</p>
- ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
- <div class="field"><label>کد پیامک</label><input id="authOtp" class="input" type="tel" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="کد ۶ رقمی"></div>
- <button class="primary fullBtn" onclick="verifySmsCode()">ورود به برنامه</button>
- <button class="recoveryBtn" type="button" onclick="sendSmsCode()">🔄 ارسال دوباره کد</button>
- <button class="recoveryBtn" type="button" onclick="authScreen()">تغییر شماره</button>
- </div>`;
+
+window.forgotPassword=async function(){
+ const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
+ if(!email)return authScreen("ابتدا ایمیل خود را وارد کنید، سپس روی بازیابی رمز بزنید.");
+ try{
+   const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:"https://hesabyarpasswordonly.vercel.app/"});
+   if(r.error)return authScreen("ارسال لینک بازیابی ناموفق بود: "+r.error.message);
+   authScreen("لینک بازیابی رمز به ایمیل شما ارسال شد. ایمیل را باز کنید و رمز جدید را تعیین کنید.");
+ }catch(e){
+   authScreen("ارسال لینک بازیابی انجام نشد. اینترنت را بررسی کنید.");
+ }
 }
 window.authScreen=authScreen;
-window.sendSmsCode=async function(){
- const raw=document.getElementById("authPhone")?.value||pendingPhone||"";
- const phone=normalizePhone(raw);
- if(!phone)return authScreen("شماره موبایل را به شکل 09121234567 وارد کنید.");
- pendingPhone=phone;
+
+window.doLogin=async function(){
+ const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
+ const password=document.getElementById("authPass")?.value||"";
+ if(!email||!password)return authScreen("ایمیل و رمز عبور را وارد کنید.");
  try{
-   const r=await sb.auth.signInWithOtp({phone});
-   if(r.error)return otpScreen("ارسال کد ناموفق بود: "+(r.error.message||r.error));
-   otpScreen("کد پیامک ارسال شد.");
-   setTimeout(()=>document.getElementById("authOtp")?.focus(),50);
- }catch(e){
-   otpScreen("ارسال کد انجام نشد. اتصال اینترنت و فعال بودن سرویس پیامک را بررسی کنید.");
- }
-};
-window.verifySmsCode=async function(){
- const token=(document.getElementById("authOtp")?.value||"").trim().replace(/[^0-9]/g,"");
- if(token.length<4)return otpScreen("کد پیامک را کامل وارد کنید.");
- try{
-   const r=await sb.auth.verifyOtp({phone:pendingPhone,token,type:"sms"});
-   if(r.error)return otpScreen("کد واردشده صحیح نیست یا منقضی شده است.");
+   const r=await sb.auth.signInWithPassword({email,password});
+   if(r.error){ const msg=String(r.error.message||r.error||""); if(/fetch|failed to fetch|network|networkerror|failed to load|connection|offline/i.test(msg))return authScreen("اینترنت خود را بررسی کنید"); return authScreen("ورود ناموفق بود: "+msg); }
    currentUser=r.data.user;
    document.body.classList.remove("authMode");
    try{await loadData();render("home");}
-   catch(e){authScreen("ورود انجام شد، اما بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
+   catch(e){authScreen("بارگذاری اطلاعات با خطا مواجه شد: "+e.message);}
  }catch(e){
-   otpScreen("تأیید کد انجام نشد. دوباره تلاش کنید.");
+   authScreen("ارتباط با سرور انجام نشد. اینترنت را بررسی کنید.");
  }
 };
 window.changeAppCurrency=unit=>{if(unit!=="تومان"&&unit!=="ریال")return;localStorage.setItem("barfCurrency",unit);render(currentPage||"home",false);};
@@ -582,11 +563,19 @@ window.updatePassword=async function(){
 
 sb.auth.onAuthStateChange((event, session)=>{
  currentUser=session?.user||null;
- if(event==="SIGNED_OUT" && !currentUser) authScreen("از حساب خارج شدید.");
+ if(event==="PASSWORD_RECOVERY"){ document.body.classList.add("authMode"); resetPasswordScreen(); return; }
+ if(event==="SIGNED_OUT" && !currentUser) authScreen();
 });
 
 async function start(){
  try{
+   const recoveryLink = /(^|[&#?])type=recovery(&|#|$)/.test(window.location.hash) ||
+                        new URLSearchParams(window.location.search).get("type")==="recovery";
+   if(recoveryLink){
+     document.body.classList.add("authMode");
+     resetPasswordScreen();
+     return;
+   }
    const s=await sb.auth.getSession();
    currentUser=s.data.session?.user||null;
    if(!currentUser){authScreen();return;}
@@ -595,7 +584,12 @@ async function start(){
    prepareHomeHistory();
    render("home",false);
  }catch(e){
-   authScreen("خطا در بارگذاری: "+(e.message||e));
+   const msg=String(e?.message||e||"");
+   if(/fetch|network|connection|offline|failed to load/i.test(msg)){
+     authScreen("اینترنت خود را بررسی کنید.");
+   }else{
+     authScreen("خطا در بارگذاری: "+msg);
+   }
  }
 }
 
