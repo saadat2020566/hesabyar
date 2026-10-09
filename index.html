@@ -85,7 +85,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .authMode #main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
 .authCard{width:min(430px,92vw);background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
 .authLogo{width:64px;height:64px;border-radius:18px;background:#176b5b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:auto}
-.authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}.recoveryBtn{width:100%;margin-top:8px;padding:9px 12px;font-size:13px}
+.authCard h1{text-align:center;margin:10px 0 4px}.authCard>p{text-align:center}.authMsg{background:#fff7e6;border:1px solid #f1d48b;border-radius:12px;padding:10px;margin:14px 0}.fullBtn{width:100%;margin-top:12px}.authLinks{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:22px;font-size:14px}.authLinks button{border:0;background:transparent;color:#57218a;font:inherit;cursor:pointer;padding:4px}.authLinks .sep{color:#999}.recoveryBtn{width:100%;margin-top:8px;padding:9px 12px;font-size:13px}
 </style><style>
 @page{size:A4 portrait;margin:0}
 @media print{
@@ -489,7 +489,7 @@ function authScreen(msg=""){
  <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
  <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
  <button class="primary fullBtn" onclick="doLogin()">ورود</button>
- <button class="primary recoveryBtn" type="button" onclick="forgotPassword()">🔑 بازیابی رمز عبور</button>
+ <div class="authLinks"><button type="button" onclick="doSignup()">ثبت نام</button><span class="sep">|</span><button type="button" onclick="forgotPassword()">فراموشی رمز</button></div>
  </div>`;
 }
 
@@ -505,6 +505,24 @@ window.forgotPassword=async function(){
  }
 }
 window.authScreen=authScreen;
+
+window.doSignup=async function(){
+ const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
+ const password=document.getElementById("authPass")?.value||"";
+ if(!email||!password)return authScreen("برای ثبت نام، ایمیل و رمز عبور را وارد کنید.");
+ if(password.length<6)return authScreen("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+ try{
+   const r=await sb.auth.signUp({email,password});
+   if(r.error){const msg=String(r.error.message||r.error||"");if(/fetch|failed to fetch|network|networkerror|connection|offline/i.test(msg))return authScreen("اینترنت خود را بررسی کنید.");return authScreen("ثبت نام انجام نشد: "+msg);}
+   if(r.data.session){
+     currentUser=r.data.user;
+     document.body.classList.remove("authMode");
+     try{await loadData();render("home");}catch(e){authScreen("حساب ساخته شد، اما بارگذاری اطلاعات خطا داشت: "+e.message);}
+   }else{
+     authScreen("ثبت نام انجام شد. برای فعال‌سازی حساب، ایمیل خود را بررسی و تأیید کنید؛ سپس وارد شوید.");
+   }
+ }catch(e){authScreen("ثبت نام انجام نشد. اینترنت را بررسی کنید.");}
+};
 
 window.doLogin=async function(){
  const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
