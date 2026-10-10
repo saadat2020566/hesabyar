@@ -479,6 +479,28 @@ window.addEventListener("popstate",()=>{
     barfBackLock=false;
   }
 });
+// Android/Cordova hardware back: close the topmost dialog/page before leaving the app.
+function barfHandleBackButton(){
+ try{
+   if(document.body.classList.contains("authMode")) return;
+   const modal=document.getElementById("modal");
+   if(modal && modal.style.display!=="none" && modal.innerHTML.trim()){
+     if(typeof invoiceViewing!=="undefined" && invoiceViewing){invoiceViewing=false;closeModal();return;}
+     if(typeof invoiceFormViewing!=="undefined" && invoiceFormViewing){invoiceFormViewing=false;closeModal();return;}
+     if(typeof closeModal==="function"){closeModal();return;}
+   }
+   if(typeof currentPage!=="undefined" && currentPage!=="home"){
+     render("home",false);
+     try{history.replaceState({barfHome:true,page:"home"},"",homeUrl());history.pushState({barfApp:true,page:"home"},"",homeUrl());}catch(e){}
+     return;
+   }
+   // At the home screen, exit only when running inside Cordova Android.
+   if(window.cordova && window.navigator && window.navigator.app && typeof window.navigator.app.exitApp==="function"){window.navigator.app.exitApp();}
+ }catch(e){console.warn("Barf back button:",e);}
+}
+document.addEventListener("backbutton",barfHandleBackButton,false);
+window.addEventListener("keydown",function(e){if(e.key==="Escape"||e.key==="BrowserBack"){barfHandleBackButton();}},false);
+
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
 function authScreen(msg=""){
@@ -585,6 +607,26 @@ sb.auth.onAuthStateChange((event, session)=>{
  if(event==="SIGNED_OUT" && !currentUser) authScreen();
 });
 
+// Refresh the Supabase session when the app returns from background.
+let barfResumeBusy=false;
+document.addEventListener("resume",async function(){
+ if(barfResumeBusy || !currentUser) return;
+ barfResumeBusy=true;
+ try{
+   const r=await sb.auth.refreshSession();
+   if(r.error){
+     // A temporary network failure must not immediately force a login screen.
+     if(/invalid.*refresh|refresh token.*not found|session.*not found|user.*not found/i.test(String(r.error.message||""))){
+       currentUser=null; authScreen("نشست ورود پایان یافته است؛ لطفاً دوباره وارد شوید.");
+     }
+     return;
+   }
+   currentUser=r.data.session?.user||currentUser;
+   if(currentUser){await loadData();}
+ }catch(e){console.warn("Barf session refresh:",e);}
+ finally{barfResumeBusy=false;}
+},false);
+
 async function start(){
  try{
    const recoveryLink = /(^|[&#?])type=recovery(&|#|$)/.test(window.location.hash) ||
@@ -596,6 +638,7 @@ async function start(){
    }
    const s=await sb.auth.getSession();
    currentUser=s.data.session?.user||null;
+   if(currentUser){try{const refreshed=await sb.auth.refreshSession();if(!refreshed.error&&refreshed.data.session)currentUser=refreshed.data.session.user;}catch(e){console.warn("Initial session refresh:",e);}}
    if(!currentUser){authScreen();return;}
    document.body.classList.remove("authMode");
    await loadData();
@@ -1617,10 +1660,26 @@ openModal(`
 
 <br>
 <div class="noPrint" style="display:flex;gap:10px">
-  <button class="secondary" onclick="window.print()">🖨 چاپ</button>
+  <button class="secondary" onclick="window.barfPrintInvoice()">🖨 چاپ</button>
   <button class="close" type="button" onclick="window.editInvoice('${i.id}')" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بازگشت برای ویرایش</button>
 </div>
 `);
+
+window.barfPrintInvoice=async function(){
+ try{
+   // Prefer native Cordova printer when installed; fall back to WebView print.
+   if(window.cordova && window.cordova.plugins && window.cordova.plugins.printer && window.cordova.plugins.printer.print){
+     window.cordova.plugins.printer.print(document.getElementById("modal")?.innerHTML||document.body.innerHTML,{name:"فاکتور برف"},function(){});
+     return;
+   }
+   const oldTitle=document.title;
+   document.body.classList.add("barf-printing");
+   const cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
+   window.addEventListener("afterprint",cleanup,{once:true});
+   setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست. دوباره تلاش کنید.");}},250);
+   setTimeout(cleanup,60000);
+ }catch(e){alert("چاپ فاکتور انجام نشد. دوباره تلاش کنید.");}
+};
 
 const customerSignature=getInvoiceSignature(i.id,"customer");
 const sellerSignature=getInvoiceSignature(i.id,"seller");
