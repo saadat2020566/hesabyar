@@ -353,9 +353,10 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
 </style>
 <script>
-if ("serviceWorker" in navigator) {
+// Service workers are for hosted web apps; skip them in the Cordova Android WebView.
+if ("serviceWorker" in navigator && !window.cordova && location.protocol !== "file:") {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js");
+    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
   });
 }
     window.addEventListener("load", () => {
@@ -399,6 +400,11 @@ if ("serviceWorker" in navigator) {
 "use strict";
 const SUPABASE_URL="https://fxlscrfnfqepchonanra.supabase.co";
 const SUPABASE_KEY="sb_publishable_m4oeS3DxKFwW3MD7jEfN8w_daMzX00F";
+if(!window.supabase || typeof window.supabase.createClient !== "function"){
+  const mainEl=document.getElementById("main");
+  if(mainEl) mainEl.innerHTML='<section dir="rtl" style="padding:24px;text-align:center"><h3>بارگذاری برنامه کامل نشد</h3><p>اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</p><button type="button" onclick="location.reload()">تلاش دوباره</button></section>';
+  throw new Error("Supabase library failed to load");
+}
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
@@ -441,6 +447,7 @@ const persianNumberWords=n=>{
 const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
+let barfPageStack=[];
 let invoiceViewing=false;
 let invoiceFormViewing=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
@@ -452,54 +459,38 @@ const nav=p=>{
   });
 };
 
-// یک نقطهٔ برگشت ثابت برای خانه می‌سازیم؛ دکمهٔ Back گوشی از هر صفحه به خانه می‌آید.
+// ناوبری برگشت: ابتدا پنجرهٔ باز بسته می‌شود، سپس به صفحهٔ قبلی می‌رویم.
 function prepareHomeHistory(){
   const u=homeUrl();
-  history.replaceState({barfHome:true,page:"home"},"",u);
-  history.pushState({barfApp:true,page:"home"},"",u);
+  try{history.replaceState({barfHome:true,page:"home"},"",u);history.pushState({barfApp:true,page:"home"},"",u);}catch(e){}
 }
-
+function barfCloseTopModal(){
+  const modal=document.getElementById("modal");
+  if(modal && modal.style.display!=="none" && modal.innerHTML.trim()){
+    if(invoiceViewing){invoiceViewing=false;}
+    if(invoiceFormViewing){invoiceFormViewing=false;}
+    if(typeof closeModal==="function"){closeModal();return true;}
+  }
+  return false;
+}
+function barfNavigateBack(){
+  if(document.body.classList.contains("authMode")) return;
+  if(barfCloseTopModal()) return;
+  const previous=barfPageStack.pop();
+  if(previous && previous!==currentPage){render(previous,false);return;}
+  if(currentPage!=="home"){barfPageStack=[];render("home",false);return;}
+  if(window.cordova && window.navigator && window.navigator.app && typeof window.navigator.app.exitApp==="function") window.navigator.app.exitApp();
+}
 window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
-  if(invoiceViewing){
-    invoiceViewing=false;
-    closeModal();
-    return;
-  }
-  if(invoiceFormViewing){
-    invoiceFormViewing=false;
-    closeModal();
-    return;
-  }
-  if(currentPage!=="home"){
-    barfBackLock=true;
-    render("home",false);
-    history.replaceState({barfHome:true,page:"home"},"",homeUrl());
-    history.pushState({barfApp:true,page:"home"},"",homeUrl());
-    barfBackLock=false;
-  }
+  barfBackLock=true;
+  try{barfNavigateBack();}finally{barfBackLock=false;}
 });
-// Android/Cordova hardware back: close the topmost dialog/page before leaving the app.
 function barfHandleBackButton(){
- try{
-   if(document.body.classList.contains("authMode")) return;
-   const modal=document.getElementById("modal");
-   if(modal && modal.style.display!=="none" && modal.innerHTML.trim()){
-     if(typeof invoiceViewing!=="undefined" && invoiceViewing){invoiceViewing=false;closeModal();return;}
-     if(typeof invoiceFormViewing!=="undefined" && invoiceFormViewing){invoiceFormViewing=false;closeModal();return;}
-     if(typeof closeModal==="function"){closeModal();return;}
-   }
-   if(typeof currentPage!=="undefined" && currentPage!=="home"){
-     render("home",false);
-     try{history.replaceState({barfHome:true,page:"home"},"",homeUrl());history.pushState({barfApp:true,page:"home"},"",homeUrl());}catch(e){}
-     return;
-   }
-   // At the home screen, exit only when running inside Cordova Android.
-   if(window.cordova && window.navigator && window.navigator.app && typeof window.navigator.app.exitApp==="function"){window.navigator.app.exitApp();}
- }catch(e){console.warn("Barf back button:",e);}
+  try{barfNavigateBack();}catch(e){console.warn("Barf back button:",e);}
 }
 document.addEventListener("backbutton",barfHandleBackButton,false);
-window.addEventListener("keydown",function(e){if(e.key==="Escape"||e.key==="BrowserBack"){barfHandleBackButton();}},false);
+window.addEventListener("keydown",function(e){if(e.key==="Escape"||e.key==="BrowserBack"){e.preventDefault();barfHandleBackButton();}},false);
 
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
@@ -613,16 +604,11 @@ document.addEventListener("resume",async function(){
  if(barfResumeBusy || !currentUser) return;
  barfResumeBusy=true;
  try{
-   const r=await sb.auth.refreshSession();
-   if(r.error){
-     // A temporary network failure must not immediately force a login screen.
-     if(/invalid.*refresh|refresh token.*not found|session.*not found|user.*not found/i.test(String(r.error.message||""))){
-       currentUser=null; authScreen("نشست ورود پایان یافته است؛ لطفاً دوباره وارد شوید.");
-     }
-     return;
-   }
-   currentUser=r.data.session?.user||currentUser;
-   if(currentUser){await loadData();}
+   // Read the persisted session on resume; do not force a token refresh here.
+   const r=await sb.auth.getSession();
+   if(r.error){console.warn("Barf session check:",r.error);return;}
+   currentUser=r.data.session?.user||null;
+   if(currentUser){await loadData();}else{authScreen("برای ادامه وارد حساب شوید.");}
  }catch(e){console.warn("Barf session refresh:",e);}
  finally{barfResumeBusy=false;}
 },false);
@@ -637,8 +623,8 @@ async function start(){
      return;
    }
    const s=await sb.auth.getSession();
+   if(s.error) throw s.error;
    currentUser=s.data.session?.user||null;
-   if(currentUser){try{const refreshed=await sb.auth.refreshSession();if(!refreshed.error&&refreshed.data.session)currentUser=refreshed.data.session.user;}catch(e){console.warn("Initial session refresh:",e);}}
    if(!currentUser){authScreen();return;}
    document.body.classList.remove("authMode");
    await loadData();
@@ -666,14 +652,11 @@ document.addEventListener("click", e => {
 
 function render(p,pushHistory=true){
  if(!currentUser)return authScreen();
-
- if(pushHistory && p!=="home"){
-   // همهٔ صفحات داخلی فقط یک قدم بعد از خانه هستند.
-   history.replaceState({barfApp:true,page:p},"",homeUrl()+"#"+p);
- }else if(p==="home" && pushHistory){
-   prepareHomeHistory();
+ if(pushHistory && p!==currentPage){
+   barfPageStack.push(currentPage);
+   if(barfPageStack.length>30)barfPageStack.shift();
  }
-
+ if(p==="home" && pushHistory){barfPageStack=[];prepareHomeHistory();}
  nav(p);
  ({home,sales,customers,products,finance,reports}[p]||home)();
 }
@@ -1666,19 +1649,36 @@ openModal(`
 `);
 
 window.barfPrintInvoice=async function(){
+ let cleanup=()=>{};
  try{
-   // Prefer native Cordova printer when installed; fall back to WebView print.
-   if(window.cordova && window.cordova.plugins && window.cordova.plugins.printer && window.cordova.plugins.printer.print){
-     window.cordova.plugins.printer.print(document.getElementById("modal")?.innerHTML||document.body.innerHTML,{name:"فاکتور برف"},function(){});
+   const modal=document.getElementById("modal");
+   if(!modal || !modal.innerHTML.trim()){
+     alert("فاکتور برای چاپ پیدا نشد. فاکتور را دوباره باز کنید.");
+     return;
+   }
+   // صبر برای بارگذاری لوگو و امضاها، چون چاپ قبل از آماده‌شدن تصویرها گاهی ناقص می‌شود.
+   const imgs=Array.from(modal.querySelectorAll("img")).filter(img=>!img.complete);
+   if(imgs.length){
+     await Promise.race([
+       Promise.all(imgs.map(img=>new Promise(resolve=>{img.addEventListener("load",resolve,{once:true});img.addEventListener("error",resolve,{once:true});}))),
+       new Promise(resolve=>setTimeout(resolve,1800))
+     ]);
+   }
+   if(window.cordova && window.cordova.plugins && window.cordova.plugins.printer && typeof window.cordova.plugins.printer.print==="function"){
+     window.cordova.plugins.printer.print(modal.innerHTML,{name:"فاکتور برف"},function(){},function(){alert("چاپ انجام نشد. دوباره تلاش کنید.");});
      return;
    }
    const oldTitle=document.title;
    document.body.classList.add("barf-printing");
-   const cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
+   cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
    window.addEventListener("afterprint",cleanup,{once:true});
-   setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست. دوباره تلاش کنید.");}},250);
+   setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست. دوباره تلاش کنید.");}},350);
    setTimeout(cleanup,60000);
- }catch(e){alert("چاپ فاکتور انجام نشد. دوباره تلاش کنید.");}
+ }catch(e){
+   try{cleanup();}catch(_){}
+   console.warn("Barf invoice print:",e);
+   alert("چاپ فاکتور انجام نشد. دوباره تلاش کنید.");
+ }
 };
 
 const customerSignature=getInvoiceSignature(i.id,"customer");
