@@ -459,7 +459,7 @@ const nav=p=>{
   });
 };
 
-// ناوبری برگشت: ابتدا پنجرهٔ باز بسته می‌شود، سپس به صفحهٔ قبلی می‌رویم.
+// ناوبری برگشت اندروید: مودال، صفحهٔ قبلی، خانه؛ فقط در خانه خروج.
 function prepareHomeHistory(){
   const u=homeUrl();
   try{history.replaceState({barfHome:true,page:"home"},"",u);history.pushState({barfApp:true,page:"home"},"",u);}catch(e){}
@@ -467,8 +467,8 @@ function prepareHomeHistory(){
 function barfCloseTopModal(){
   const modal=document.getElementById("modal");
   if(modal && modal.style.display!=="none" && modal.innerHTML.trim()){
-    if(invoiceViewing){invoiceViewing=false;}
-    if(invoiceFormViewing){invoiceFormViewing=false;}
+    if(typeof invoiceViewing!=="undefined" && invoiceViewing) invoiceViewing=false;
+    if(typeof invoiceFormViewing!=="undefined" && invoiceFormViewing) invoiceFormViewing=false;
     if(typeof closeModal==="function"){closeModal();return true;}
   }
   return false;
@@ -476,20 +476,29 @@ function barfCloseTopModal(){
 function barfNavigateBack(){
   if(document.body.classList.contains("authMode")) return;
   if(barfCloseTopModal()) return;
-  const previous=barfPageStack.pop();
-  if(previous && previous!==currentPage){render(previous,false);return;}
-  if(currentPage!=="home"){barfPageStack=[];render("home",false);return;}
+  while(barfPageStack.length){
+    const previous=barfPageStack.pop();
+    if(previous && previous!==currentPage){render(previous,false);return;}
+  }
+  if(currentPage!=="home"){render("home",false);return;}
   if(window.cordova && window.navigator && window.navigator.app && typeof window.navigator.app.exitApp==="function") window.navigator.app.exitApp();
+}
+let barfBackListenerInstalled=false;
+function barfHandleBackButton(){
+  try{barfNavigateBack();}catch(e){console.warn("Barf back button:",e);}
+}
+function barfInstallBackListener(){
+  if(barfBackListenerInstalled)return;
+  barfBackListenerInstalled=true;
+  document.addEventListener("backbutton",barfHandleBackButton,false);
 }
 window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
   barfBackLock=true;
   try{barfNavigateBack();}finally{barfBackLock=false;}
 });
-function barfHandleBackButton(){
-  try{barfNavigateBack();}catch(e){console.warn("Barf back button:",e);}
-}
-document.addEventListener("backbutton",barfHandleBackButton,false);
+document.addEventListener("deviceready",barfInstallBackListener,false);
+barfInstallBackListener();
 window.addEventListener("keydown",function(e){if(e.key==="Escape"||e.key==="BrowserBack"){e.preventDefault();barfHandleBackButton();}},false);
 
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
@@ -1649,36 +1658,45 @@ openModal(`
 `);
 
 window.barfPrintInvoice=async function(){
- let cleanup=()=>{};
- try{
-   const modal=document.getElementById("modal");
-   if(!modal || !modal.innerHTML.trim()){
-     alert("فاکتور برای چاپ پیدا نشد. فاکتور را دوباره باز کنید.");
-     return;
-   }
-   // صبر برای بارگذاری لوگو و امضاها، چون چاپ قبل از آماده‌شدن تصویرها گاهی ناقص می‌شود.
-   const imgs=Array.from(modal.querySelectorAll("img")).filter(img=>!img.complete);
-   if(imgs.length){
-     await Promise.race([
-       Promise.all(imgs.map(img=>new Promise(resolve=>{img.addEventListener("load",resolve,{once:true});img.addEventListener("error",resolve,{once:true});}))),
-       new Promise(resolve=>setTimeout(resolve,1800))
-     ]);
-   }
-   if(window.cordova && window.cordova.plugins && window.cordova.plugins.printer && typeof window.cordova.plugins.printer.print==="function"){
-     window.cordova.plugins.printer.print(modal.innerHTML,{name:"فاکتور برف"},function(){},function(){alert("چاپ انجام نشد. دوباره تلاش کنید.");});
-     return;
-   }
-   const oldTitle=document.title;
-   document.body.classList.add("barf-printing");
-   cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
-   window.addEventListener("afterprint",cleanup,{once:true});
-   setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست. دوباره تلاش کنید.");}},350);
-   setTimeout(cleanup,60000);
- }catch(e){
-   try{cleanup();}catch(_){}
-   console.warn("Barf invoice print:",e);
-   alert("چاپ فاکتور انجام نشد. دوباره تلاش کنید.");
- }
+  try{
+    const modal=document.getElementById("modal");
+    if(!modal || !modal.innerHTML.trim()){
+      alert("فاکتور برای چاپ پیدا نشد. فاکتور را دوباره باز کنید.");
+      return;
+    }
+    const imgs=Array.from(modal.querySelectorAll("img")).filter(img=>!img.complete);
+    if(imgs.length){
+      await Promise.race([
+        Promise.all(imgs.map(img=>new Promise(resolve=>{img.addEventListener("load",resolve,{once:true});img.addEventListener("error",resolve,{once:true});}))),
+        new Promise(resolve=>setTimeout(resolve,2500))
+      ]);
+    }
+    if(window.cordova){
+      const printer=window.cordova.plugins && window.cordova.plugins.printer;
+      if(!printer || typeof printer.print!=="function"){
+        alert("امکان چاپ در این نسخه فعال نیست. فایل‌های جدید پروژه را در مخزن قرار بده و APK را دوباره بساز.");
+        return;
+      }
+      const styles=Array.from(document.querySelectorAll("style")).map(x=>x.innerHTML).join("\n");
+      const links=Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(x=>x.outerHTML).join("\n");
+      const content='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاکتور برف</title>'+links+'<style>'+styles+'\nbody{background:#fff!important;margin:0!important;padding:12px!important}.noPrint,button{display:none!important}#modal{display:block!important;position:static!important;inset:auto!important;overflow:visible!important;background:#fff!important;padding:0!important}#modal .modalContent{box-shadow:none!important;margin:0!important;max-width:none!important;width:100%!important}</style></head><body>'+modal.outerHTML+'</body></html>';
+      printer.print(content,{name:"فاکتور برف"},function(){},function(){alert("چاپ انجام نشد. سرویس چاپگر را بررسی و دوباره تلاش کن.");});
+      return;
+    }
+    if(typeof window.print==="function"){
+      const oldTitle=document.title;
+      const cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
+      document.body.classList.add("barf-printing");
+      window.addEventListener("afterprint",cleanup,{once:true});
+      setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست.");}},350);
+      setTimeout(cleanup,60000);
+      return;
+    }
+    alert("چاپ در این دستگاه پشتیبانی نمی‌شود.");
+  }catch(e){
+    console.warn("Barf invoice print:",e);
+    alert("چاپ فاکتور انجام نشد. دوباره تلاش کن.");
+  }
 };
 
 const customerSignature=getInvoiceSignature(i.id,"customer");
@@ -1765,5 +1783,6 @@ window.deleteInvoice=async id=>{
 start();
 })();
 </script>
+<script src="cordova.js"></script>
 </body>
 </html>
