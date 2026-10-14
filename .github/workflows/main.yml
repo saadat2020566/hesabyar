@@ -1,90 +1,60 @@
-name: Barf Android Release APK
+
+name: Build Barf Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Get source code
         uses: actions/checkout@v4
-      - name: Setup Java 17
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: ""
-      - name: Install Android SDK 36
-        shell: bash
-        run: |
-          set -e
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
       - name: Install Cordova
-        shell: bash
-        run: npm install -g cordova@13.0.0
+        run: npm install -g cordova
+
       - name: Prepare Cordova project
-        shell: bash
         run: |
-          set -e
-          rm -rf build-app
-          cordova create build-app com.barf.app "برف"
-          cp index.html build-app/www/index.html
-          cp config.xml build-app/config.xml
-          if [ -f service-worker.js ]; then cp service-worker.js build-app/www/service-worker.js; fi
-          if [ -f sw.js ]; then cp sw.js build-app/www/sw.js; fi
-          if [ -f manifest.json ]; then cp manifest.json build-app/www/manifest.json; fi
-          if [ -f manifest.webmanifest ]; then cp manifest.webmanifest build-app/www/manifest.webmanifest; fi
-          if [ -f icon-192.png ]; then cp icon-192.png build-app/icon-192.png; cp icon-192.png build-app/www/icon-192.png; fi
-          if [ -f icon-512.png ]; then cp icon-512.png build-app/icon-512.png; cp icon-512.png build-app/www/icon-512.png; fi
-          cd build-app
-          cordova platform add android@15.0.0
-          cordova plugin add cordova-plugin-printer
-      - name: Build Release APK
-        shell: bash
-        working-directory: build-app
-        run: cordova build android --release -- --packageType=apk
-      - name: Check APK
-        shell: bash
-        run: |
-          set -e
-          APK="build-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk"
-          if [ ! -f "$APK" ]; then
-            echo "Release APK was not created."
-            find build-app/platforms/android/app/build/outputs -type f \( -name "*.apk" -o -name "*.aab" \) -print || true
-            exit 1
+          if [ ! -f package.json ]; then
+            npm init -y
           fi
-          ls -lh "$APK"
-      - name: Sign Release APK
-        shell: bash
-        env:
-          KS_B64: ${{ secrets.BARF_KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.BARF_KEYSTORE_PASSWORD }}
-          ALIAS: ${{ secrets.BARF_KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.BARF_KEY_PASSWORD }}
-        run: |
-          set -e
-          test -n "$KS_B64" || { echo "BARF_KEYSTORE_BASE64 is missing"; exit 1; }
-          test -n "$KS_PASS" || { echo "BARF_KEYSTORE_PASSWORD is missing"; exit 1; }
-          test -n "$ALIAS" || { echo "BARF_KEY_ALIAS is missing"; exit 1; }
-          test -n "$KEY_PASS" || { echo "BARF_KEY_PASSWORD is missing"; exit 1; }
-          SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          BUILD_TOOLS="$SDK_ROOT/build-tools/36.0.0"
-          echo "$KS_B64" | base64 --decode > barf-release.jks
-          "$BUILD_TOOLS/zipalign" -p -f 4 build-app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
-          "$BUILD_TOOLS/apksigner" sign --ks barf-release.jks --ks-key-alias "$ALIAS" --ks-pass pass:"$KS_PASS" --key-pass pass:"$KEY_PASS" --out barf-cafebazaar-release.apk aligned.apk
-          "$BUILD_TOOLS/apksigner" verify --verbose barf-cafebazaar-release.apk
-      - name: Upload Release APK
+          mkdir -p www
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='platforms/' \
+            --exclude='plugins/' \
+            --exclude='node_modules/' \
+            --exclude='www/' \
+            --exclude='package.json' \
+            --exclude='config.xml' \
+            ./ www/
+
+      - name: Add Android platform
+        run: cordova platform add android@15
+
+      - name: Build APK
+        run: cordova build android --debug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: barf-cafebazaar-release
-          path: barf-cafebazaar-release.apk
+          name: barf-debug-apk
+          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
