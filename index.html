@@ -353,10 +353,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 
 </style>
 <script>
-// Service workers are for hosted web apps; skip them in the Cordova Android WebView.
-if ("serviceWorker" in navigator && !window.cordova && location.protocol !== "file:") {
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js");
   });
 }
     window.addEventListener("load", () => {
@@ -400,11 +399,6 @@ if ("serviceWorker" in navigator && !window.cordova && location.protocol !== "fi
 "use strict";
 const SUPABASE_URL="https://fxlscrfnfqepchonanra.supabase.co";
 const SUPABASE_KEY="sb_publishable_m4oeS3DxKFwW3MD7jEfN8w_daMzX00F";
-if(!window.supabase || typeof window.supabase.createClient !== "function"){
-  const mainEl=document.getElementById("main");
-  if(mainEl) mainEl.innerHTML='<section dir="rtl" style="padding:24px;text-align:center"><h3>بارگذاری برنامه کامل نشد</h3><p>اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</p><button type="button" onclick="location.reload()">تلاش دوباره</button></section>';
-  throw new Error("Supabase library failed to load");
-}
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let currentUser=null,data={customers:[],products:[],invoices:[],expenses:[]},main=document.getElementById("main");
 let currentInvoiceItems=[];
@@ -447,7 +441,6 @@ const persianNumberWords=n=>{
 const moneyInWords=(n,unit)=>persianNumberWords(n)+" "+(unit||appCurrency());
 let currentPage="home";
 let barfBackLock=false;
-let barfPageStack=[];
 let invoiceViewing=false;
 let invoiceFormViewing=false;
 const homeUrl=()=>window.location.pathname+window.location.search;
@@ -459,57 +452,33 @@ const nav=p=>{
   });
 };
 
-// ناوبری برگشت اندروید: مودال، صفحهٔ قبلی، خانه؛ فقط در خانه خروج.
+// یک نقطهٔ برگشت ثابت برای خانه می‌سازیم؛ دکمهٔ Back گوشی از هر صفحه به خانه می‌آید.
 function prepareHomeHistory(){
   const u=homeUrl();
-  try{history.replaceState({barfHome:true,page:"home"},"",u);history.pushState({barfApp:true,page:"home"},"",u);}catch(e){}
+  history.replaceState({barfHome:true,page:"home"},"",u);
+  history.pushState({barfApp:true,page:"home"},"",u);
 }
-function barfCloseTopModal(){
-  // اول پنجرهٔ فرعی را ببند؛ اگر باز نبود، پنجرهٔ اصلی را ببند.
-  const subModal=document.getElementById("subModal");
-  if(subModal && subModal.classList.contains("open")){
-    if(typeof closeSubModal==="function"){closeSubModal();return true;}
-    subModal.classList.remove("open");
-    return true;
-  }
-  const modal=document.getElementById("modal");
-  if(modal && modal.classList.contains("open")){
-    if(typeof invoiceViewing!=="undefined" && invoiceViewing) invoiceViewing=false;
-    if(typeof invoiceFormViewing!=="undefined" && invoiceFormViewing) invoiceFormViewing=false;
-    if(typeof closeModal==="function"){closeModal();return true;}
-    modal.classList.remove("open");
-    return true;
-  }
-  return false;
-}
-function barfNavigateBack(){
-  if(document.body.classList.contains("authMode")) return;
-  if(barfCloseTopModal()) return;
-  while(barfPageStack.length){
-    const previous=barfPageStack.pop();
-    if(previous && previous!==currentPage){render(previous,false);return;}
-  }
-  if(currentPage!=="home"){render("home",false);return;}
-  if(window.cordova && window.navigator && window.navigator.app && typeof window.navigator.app.exitApp==="function") window.navigator.app.exitApp();
-}
-let barfBackListenerInstalled=false;
-function barfHandleBackButton(){
-  try{barfNavigateBack();}catch(e){console.warn("Barf back button:",e);}
-}
-function barfInstallBackListener(){
-  if(barfBackListenerInstalled)return;
-  barfBackListenerInstalled=true;
-  document.addEventListener("backbutton",barfHandleBackButton,false);
-}
+
 window.addEventListener("popstate",()=>{
   if(barfBackLock)return;
-  barfBackLock=true;
-  try{barfNavigateBack();}finally{barfBackLock=false;}
+  if(invoiceViewing){
+    invoiceViewing=false;
+    closeModal();
+    return;
+  }
+  if(invoiceFormViewing){
+    invoiceFormViewing=false;
+    closeModal();
+    return;
+  }
+  if(currentPage!=="home"){
+    barfBackLock=true;
+    render("home",false);
+    history.replaceState({barfHome:true,page:"home"},"",homeUrl());
+    history.pushState({barfApp:true,page:"home"},"",homeUrl());
+    barfBackLock=false;
+  }
 });
-document.addEventListener("deviceready",barfInstallBackListener,false);
-barfInstallBackListener();
-window.addEventListener("keydown",function(e){if(e.key==="Escape"||e.key==="BrowserBack"){e.preventDefault();barfHandleBackButton();}},false);
-
 const metric=(a,b,c)=>`<div class="card"><div style="font-size:12px;color:#777">${a}</div><div style="font-size:22px;font-weight:bold;margin:6px 0">${b}</div><div style="font-size:11px;color:#999">${c}</div></div>`;
 
 function authScreen(msg=""){
@@ -616,21 +585,6 @@ sb.auth.onAuthStateChange((event, session)=>{
  if(event==="SIGNED_OUT" && !currentUser) authScreen();
 });
 
-// Refresh the Supabase session when the app returns from background.
-let barfResumeBusy=false;
-document.addEventListener("resume",async function(){
- if(barfResumeBusy || !currentUser) return;
- barfResumeBusy=true;
- try{
-   // Read the persisted session on resume; do not force a token refresh here.
-   const r=await sb.auth.getSession();
-   if(r.error){console.warn("Barf session check:",r.error);return;}
-   currentUser=r.data.session?.user||null;
-   if(currentUser){await loadData();}else{authScreen("برای ادامه وارد حساب شوید.");}
- }catch(e){console.warn("Barf session refresh:",e);}
- finally{barfResumeBusy=false;}
-},false);
-
 async function start(){
  try{
    const recoveryLink = /(^|[&#?])type=recovery(&|#|$)/.test(window.location.hash) ||
@@ -641,7 +595,6 @@ async function start(){
      return;
    }
    const s=await sb.auth.getSession();
-   if(s.error) throw s.error;
    currentUser=s.data.session?.user||null;
    if(!currentUser){authScreen();return;}
    document.body.classList.remove("authMode");
@@ -670,11 +623,14 @@ document.addEventListener("click", e => {
 
 function render(p,pushHistory=true){
  if(!currentUser)return authScreen();
- if(pushHistory && p!==currentPage){
-   barfPageStack.push(currentPage);
-   if(barfPageStack.length>30)barfPageStack.shift();
+
+ if(pushHistory && p!=="home"){
+   // همهٔ صفحات داخلی فقط یک قدم بعد از خانه هستند.
+   history.replaceState({barfApp:true,page:p},"",homeUrl()+"#"+p);
+ }else if(p==="home" && pushHistory){
+   prepareHomeHistory();
  }
- if(p==="home" && pushHistory){barfPageStack=[];prepareHomeHistory();}
+
  nav(p);
  ({home,sales,customers,products,finance,reports}[p]||home)();
 }
@@ -1661,49 +1617,10 @@ openModal(`
 
 <br>
 <div class="noPrint" style="display:flex;gap:10px">
-  <button class="secondary" onclick="window.barfPrintInvoice()">🖨 چاپ</button>
+  <button class="secondary" onclick="window.print()">🖨 چاپ</button>
   <button class="close" type="button" onclick="window.editInvoice('${i.id}')" style="margin-right:auto;width:auto;padding:0 15px;font-size:14px;">بازگشت برای ویرایش</button>
 </div>
 `);
-
-window.barfPrintInvoice=async function(){
-  try{
-    const modal=document.getElementById("modal");
-    if(!modal || !modal.innerHTML.trim()){
-      alert("فاکتور برای چاپ پیدا نشد. فاکتور را دوباره باز کنید.");
-      return;
-    }
-    const imgs=Array.from(modal.querySelectorAll("img")).filter(img=>!img.complete);
-    if(imgs.length){
-      await Promise.race([
-        Promise.all(imgs.map(img=>new Promise(resolve=>{img.addEventListener("load",resolve,{once:true});img.addEventListener("error",resolve,{once:true});}))),
-        new Promise(resolve=>setTimeout(resolve,2500))
-      ]);
-    }
-    const printer=window.cordova && window.cordova.plugins && window.cordova.plugins.printer;
-    if(printer && typeof printer.print==="function"){
-      const styles=Array.from(document.querySelectorAll("style")).map(x=>x.innerHTML).join("\\n");
-      const links=Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(x=>x.outerHTML).join("\\n");
-      const content='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاکتور برف</title>'+links+'<style>'+styles+'\\nbody{background:#fff!important;margin:0!important;padding:12px!important}.noPrint,button{display:none!important}#modal{display:block!important;position:static!important;inset:auto!important;overflow:visible!important;background:#fff!important;padding:0!important}#modal .box{box-shadow:none!important;margin:0!important;max-width:none!important;width:100%!important;max-height:none!important;overflow:visible!important}</style></head><body>'+modal.outerHTML+'</body></html>';
-      printer.print(content,{name:"فاکتور برف"},function(){},function(){alert("چاپ انجام نشد. سرویس چاپگر را بررسی و دوباره تلاش کن.");});
-      return;
-    }
-    // اگر افزونهٔ Cordova موجود نبود، روش معمول چاپ را هم امتحان کن.
-    if(typeof window.print==="function"){
-      const oldTitle=document.title;
-      const cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
-      document.body.classList.add("barf-printing");
-      window.addEventListener("afterprint",cleanup,{once:true});
-      setTimeout(()=>{try{window.print();}catch(e){cleanup();alert("چاپ در این دستگاه در دسترس نیست.");}},350);
-      setTimeout(cleanup,60000);
-      return;
-    }
-    alert("چاپ در این دستگاه پشتیبانی نمی‌شود.");
-  }catch(e){
-    console.warn("Barf invoice print:",e);
-    alert("چاپ فاکتور انجام نشد. دوباره تلاش کن.");
-  }
-};
 
 const customerSignature=getInvoiceSignature(i.id,"customer");
 const sellerSignature=getInvoiceSignature(i.id,"seller");
@@ -1789,6 +1706,5 @@ window.deleteInvoice=async id=>{
 start();
 })();
 </script>
-<script src="cordova.js"></script>
 </body>
 </html>
