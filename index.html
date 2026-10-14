@@ -465,11 +465,20 @@ function prepareHomeHistory(){
   try{history.replaceState({barfHome:true,page:"home"},"",u);history.pushState({barfApp:true,page:"home"},"",u);}catch(e){}
 }
 function barfCloseTopModal(){
+  // اول پنجرهٔ فرعی را ببند؛ اگر باز نبود، پنجرهٔ اصلی را ببند.
+  const subModal=document.getElementById("subModal");
+  if(subModal && subModal.classList.contains("open")){
+    if(typeof closeSubModal==="function"){closeSubModal();return true;}
+    subModal.classList.remove("open");
+    return true;
+  }
   const modal=document.getElementById("modal");
-  if(modal && modal.style.display!=="none" && modal.innerHTML.trim()){
+  if(modal && modal.classList.contains("open")){
     if(typeof invoiceViewing!=="undefined" && invoiceViewing) invoiceViewing=false;
     if(typeof invoiceFormViewing!=="undefined" && invoiceFormViewing) invoiceFormViewing=false;
     if(typeof closeModal==="function"){closeModal();return true;}
+    modal.classList.remove("open");
+    return true;
   }
   return false;
 }
@@ -1671,18 +1680,15 @@ window.barfPrintInvoice=async function(){
         new Promise(resolve=>setTimeout(resolve,2500))
       ]);
     }
-    if(window.cordova){
-      const printer=window.cordova.plugins && window.cordova.plugins.printer;
-      if(!printer || typeof printer.print!=="function"){
-        alert("امکان چاپ در این نسخه فعال نیست. فایل‌های جدید پروژه را در مخزن قرار بده و APK را دوباره بساز.");
-        return;
-      }
-      const styles=Array.from(document.querySelectorAll("style")).map(x=>x.innerHTML).join("\n");
-      const links=Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(x=>x.outerHTML).join("\n");
-      const content='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاکتور برف</title>'+links+'<style>'+styles+'\nbody{background:#fff!important;margin:0!important;padding:12px!important}.noPrint,button{display:none!important}#modal{display:block!important;position:static!important;inset:auto!important;overflow:visible!important;background:#fff!important;padding:0!important}#modal .modalContent{box-shadow:none!important;margin:0!important;max-width:none!important;width:100%!important}</style></head><body>'+modal.outerHTML+'</body></html>';
+    const printer=window.cordova && window.cordova.plugins && window.cordova.plugins.printer;
+    if(printer && typeof printer.print==="function"){
+      const styles=Array.from(document.querySelectorAll("style")).map(x=>x.innerHTML).join("\\n");
+      const links=Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(x=>x.outerHTML).join("\\n");
+      const content='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>فاکتور برف</title>'+links+'<style>'+styles+'\\nbody{background:#fff!important;margin:0!important;padding:12px!important}.noPrint,button{display:none!important}#modal{display:block!important;position:static!important;inset:auto!important;overflow:visible!important;background:#fff!important;padding:0!important}#modal .box{box-shadow:none!important;margin:0!important;max-width:none!important;width:100%!important;max-height:none!important;overflow:visible!important}</style></head><body>'+modal.outerHTML+'</body></html>';
       printer.print(content,{name:"فاکتور برف"},function(){},function(){alert("چاپ انجام نشد. سرویس چاپگر را بررسی و دوباره تلاش کن.");});
       return;
     }
+    // اگر افزونهٔ Cordova موجود نبود، روش معمول چاپ را هم امتحان کن.
     if(typeof window.print==="function"){
       const oldTitle=document.title;
       const cleanup=()=>{document.body.classList.remove("barf-printing");document.title=oldTitle;window.removeEventListener("afterprint",cleanup);};
