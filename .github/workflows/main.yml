@@ -48,7 +48,8 @@ jobs:
 
       - name: Add Android platform
         run: cordova platform add android@15
-
+      - name: Add AndroidX compatibility adapter
+        run: cordova plugin add cordova-plugin-androidx-adapter
       - name: Build APK
         run: cordova build android --debug
 
