@@ -1,0 +1,77 @@
+name: Build Barf Android APK
+
+on:
+workflow_dispatch:
+push:
+branches:
+- main
+
+jobs:
+build:
+runs-on: ubuntu-latest
+
+```
+steps:
+  - name: Get source code
+    uses: actions/checkout@v4
+
+  - name: Set up Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: "20"
+
+  - name: Set up Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
+
+  - name: Install Cordova
+    run: npm install -g cordova
+
+  - name: Prepare Cordova project
+    run: |
+      test -s index.html
+      test -s config.xml
+      mkdir -p www
+      rsync -a \
+        --exclude='.git/' \
+        --exclude='.github/' \
+        --exclude='platforms/' \
+        --exclude='plugins/' \
+        --exclude='node_modules/' \
+        --exclude='www/' \
+        --exclude='package.json' \
+        --exclude='config.xml' \
+        ./ www/
+      cp index.html www/index.html
+      test -s www/index.html
+      test -s www/manifest.json
+      test -s www/icon-192.png
+      test -s www/icon-512.png
+      if [ ! -f package.json ]; then
+        npm init -y
+      fi
+
+  - name: Add Android platform
+    run: cordova platform add android@15
+
+  - name: Add AndroidX compatibility adapter
+    run: cordova plugin add cordova-plugin-androidx-adapter
+
+  - name: Verify packaged app files
+    run: |
+      test -s www/index.html
+      test -s www/manifest.json
+      test -s www/icon-192.png
+      test -s www/icon-512.png
+
+  - name: Build APK
+    run: cordova build android --debug
+
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: barf-debug-apk
+      path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+      if-no-files-found: error
