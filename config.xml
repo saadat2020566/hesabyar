@@ -13,4 +13,5 @@
   <preference name="android-compileSdkVersion" value="36" />
   <preference name="Orientation" value="default" />
   <plugin name="cordova-plugin-printer" />
+  <icon src="icon-192.png" />
 </widget>
