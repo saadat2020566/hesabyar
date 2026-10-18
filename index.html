@@ -510,7 +510,7 @@ window.forgotPassword=async function(){
    showForgotPasswordScreen("لطفاً ابتدا ایمیل خود را وارد کنید.");
    return;
  }
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
    showForgotPasswordScreen("فرمت ایمیل صحیح نیست. ایمیل را بررسی کنید.",email);
    return;
  }
