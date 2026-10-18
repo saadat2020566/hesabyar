@@ -488,20 +488,47 @@ function authScreen(msg=""){
  ${msg?`<div class="authMsg">${esc(msg)}</div>`:""}
  <div class="field"><label>ایمیل</label><input id="authEmail" class="input" type="email" autocomplete="username" placeholder="example@email.com"></div>
  <div class="field"><label>رمز عبور</label><input id="authPass" class="input" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
- <button class="primary fullBtn" onclick="doLogin()">ورود</button>
- <div class="authLinks"><button type="button" onclick="doSignup()">ثبت نام</button><span class="sep">|</span><button type="button" onclick="forgotPassword()">فراموشی رمز</button></div>
+ <button class="primary fullBtn" type="button" onclick="doLogin()">ورود</button>
+ <div class="authLinks"><button type="button" onclick="doSignup()">ثبت نام</button><span class="sep">|</span><button type="button" onclick="showForgotPasswordScreen()">فراموشی رمز</button></div>
  </div>`;
 }
 
+window.showForgotPasswordScreen=function(message="",emailValue=""){
+ document.body.classList.add("authMode");
+ main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>بازیابی رمز عبور</h1>
+ <p class="muted">ایمیل حساب خود را وارد کنید تا لینک بازیابی ارسال شود.</p>
+ ${message?`<div class="authMsg">${esc(message)}</div>`:""}
+ <div class="field"><label>ایمیل</label><input id="recoveryEmail" class="input" type="email" autocomplete="email" value="${esc(emailValue)}" placeholder="example@email.com"></div>
+ <button class="primary fullBtn" type="button" onclick="forgotPassword()">ارسال لینک بازیابی</button>
+ <button class="secondary fullBtn" type="button" onclick="authScreen()">بازگشت به ورود</button>
+ </div>`;
+};
+
 window.forgotPassword=async function(){
- const email=(document.getElementById("authEmail")?.value||"").trim().toLowerCase();
- if(!email)return authScreen("ابتدا ایمیل خود را وارد کنید، سپس روی بازیابی رمز بزنید.");
+ const email=(document.getElementById("recoveryEmail")?.value||"").trim().toLowerCase();
+ if(!email){
+   showForgotPasswordScreen("لطفاً ابتدا ایمیل خود را وارد کنید.");
+   return;
+ }
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+   showForgotPasswordScreen("فرمت ایمیل صحیح نیست. ایمیل را بررسی کنید.",email);
+   return;
+ }
+ const btn=main.querySelector('button[onclick="forgotPassword()"]');
+ if(btn){btn.disabled=true;btn.textContent="در حال ارسال...";}
  try{
    const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:"https://hesabyarpasswordonly.vercel.app/"});
-   if(r.error)return authScreen("ارسال لینک بازیابی ناموفق بود: "+r.error.message);
-   authScreen("لینک بازیابی رمز به ایمیل شما ارسال شد. ایمیل را باز کنید و رمز جدید را تعیین کنید.");
+   if(r.error){
+     showForgotPasswordScreen("ارسال لینک ناموفق بود: "+(r.error.message||"خطای نامشخص"),email);
+     return;
+   }
+   document.body.classList.add("authMode");
+   main.innerHTML=`<div class="authCard"><div class="authLogo">❄️</div><h1>برف</h1>
+   <div class="authMsg">در صورت ثبت بودن این ایمیل، لینک بازیابی ارسال شده است. صندوق ورودی و پوشهٔ هرزنامه (Spam) را بررسی کنید.</div>
+   <button class="primary fullBtn" type="button" onclick="authScreen()">بازگشت به ورود</button>
+   </div>`;
  }catch(e){
-   authScreen("ارسال لینک بازیابی انجام نشد. اینترنت را بررسی کنید.");
+   showForgotPasswordScreen("ارسال لینک انجام نشد. اتصال اینترنت را بررسی و دوباره تلاش کنید.",email);
  }
 }
 window.authScreen=authScreen;
